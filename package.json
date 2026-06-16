@@ -1,0 +1,46 @@
+{
+  "name": "proba",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MCP-driven QA workbench: drive web/API/DB through MCP, emit durable, human-editable test artifacts (JSON canonical → Playwright TS + Gherkin), with cross-session agent memory.",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "mcp",
+    "qa",
+    "testing",
+    "playwright",
+    "e2e",
+    "test-automation",
+    "gherkin",
+    "bdd",
+    "model-context-protocol"
+  ],
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "predev": "node scripts/ensure-demo-db.mjs",
+    "dev": "pnpm --filter @proba/dashboard dev",
+    "mcp": "pnpm --filter @proba/mcp start",
+    "dashboard": "pnpm --filter @proba/mcp exec tsx src/index.ts dashboard",
+    "seed": "tsx scripts/seed-demo.ts .proba/proba.db",
+    "seed:build": "tsx scripts/seed-demo.ts demo/proba.db"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@proba/store": "workspace:*",
+    "better-sqlite3": "^11.7.0",
+    "drizzle-orm": "^0.38.2",
+    "tsx": "^4.22.4",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

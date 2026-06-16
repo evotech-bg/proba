@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "proba": {
+      "command": "pnpm",
+      "args": ["--filter", "@proba/mcp", "start"]
+    }
+  }
+}

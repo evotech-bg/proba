@@ -1,0 +1,40 @@
+{
+  "name": "@proba/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "bin": { "proba-mcp": "./src/index.ts", "proba": "./src/index.ts" },
+  "exports": { ".": "./src/index.ts", "./recorder": "./src/recorder.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "start": "tsx src/index.ts",
+    "start:dist": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "@proba/a11y": "workspace:*",
+    "@proba/codegen": "workspace:*",
+    "@proba/design": "workspace:*",
+    "@proba/engine": "workspace:*",
+    "@proba/locator": "workspace:*",
+    "@proba/overlay": "workspace:*",
+    "@proba/store": "workspace:*",
+    "@proba/tracker": "workspace:*",
+    "axe-core": "^4.10.2",
+    "better-sqlite3": "^11.7.0",
+    "drizzle-orm": "^0.38.2",
+    "playwright": "^1.49.1",
+    "zod": "^3.24.1"
+  },
+  "optionalDependencies": {
+    "mysql2": "^3.11.5",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2"
+  }
+}

@@ -1,0 +1,29 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+
+# Proba local data (SQLite store, snapshots, baselines, traces)
+.proba/
+*.db
+*.db-shm
+*.db-wal
+# …but ship the curated demo store
+!demo/proba.db
+
+# Local dev infra (project-specific, gitignored)
+docker-compose.dev.yml
+.env
+.env.local
+*.local.md
+
+# Playwright
+test-results/
+playwright-report/
+.cache/
+
+# dashboard runtime screenshots
+apps/dashboard/public/shots/
+
+# Local editor / assistant working notes
+.claude/

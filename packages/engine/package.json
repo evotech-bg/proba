@@ -1,0 +1,29 @@
+{
+  "name": "@proba/engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@proba/locator": "workspace:*",
+    "@proba/overlay": "workspace:*",
+    "better-sqlite3": "^11.7.0",
+    "playwright": "^1.49.1"
+  },
+  "optionalDependencies": {
+    "mysql2": "^3.11.5",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/pg": "^8.11.10",
+    "pg-mem": "^3.0.5"
+  }
+}

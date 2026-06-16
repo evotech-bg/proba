@@ -1,0 +1,16 @@
+# Self-contained compose for colleagues / CI. Proba is local-first (SQLite), so this only serves
+# the dashboard. The MCP server runs on the developer's machine (stdio), not as a hosted service.
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    ports:
+      - "7373:7373"
+    environment:
+      PROBA_DB: /data/proba.db
+    volumes:
+      - proba-data:/data
+
+volumes:
+  proba-data:
