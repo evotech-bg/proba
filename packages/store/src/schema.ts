@@ -6,7 +6,7 @@
  * Every layer of the full vision is encoded here from day 1 so nothing is precluded;
  * features render later.
  */
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, real, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
 // global Web Crypto — available in Node 22 and browsers; avoids importing 'node:crypto'
 // (which vite externalizes and crashes the client bundle when schema is client-reachable).
@@ -383,6 +383,30 @@ export const settings = sqliteTable('settings', {
   value: text('value', { mode: 'json' }).$type<unknown>().notNull(),
   updatedAt: updatedAt(),
 })
+
+// ── per-app config: named test accounts + variables ──────────────────────────
+// So credentials are not hardcoded into steps and one flow can run against
+// different accounts. Reference in any step value as {{account.<name>.<field>}}
+// or {{var.<name>}}; the engine resolves them at run time, scoped by appKey.
+export type AppConfigType = 'account' | 'var'
+/** account: data = { fields: { email, password, role, … } }; var: data = { value } */
+export const appConfig = sqliteTable(
+  'app_config',
+  {
+    id: id(),
+    appKey: text('app_key').notNull(),
+    type: text('type').$type<AppConfigType>().notNull(),
+    name: text('name').notNull(), // e.g. 'client' / 'admin' (account) or 'baseURL' (var)
+    data: text('data', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+    secret: integer('secret', { mode: 'boolean' }).default(false).notNull(), // mask in UI/exports
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('app_config_app_idx').on(t.appKey, t.type),
+    unique('app_config_uq').on(t.appKey, t.type, t.name),
+  ],
+)
 
 // ── inferred types (consumed across packages) ─────────────────────────────────
 export type Setting = typeof settings.$inferSelect

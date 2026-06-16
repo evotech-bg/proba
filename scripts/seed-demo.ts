@@ -18,6 +18,8 @@ import {
   assertions as assertionsT,
   ensureApp,
   ensureProject,
+  setAccount,
+  setVar,
   flakyRecords as flakyT,
   knowledge as knowledgeT,
   openStore,
@@ -79,6 +81,19 @@ ensureApp(db, 'demo-shop-api', 'demo-shop', 'API', 'api')
 ensureProject(db, 'acme', 'Acme SaaS', 'A B2B SaaS product')
 ensureApp(db, 'acme-web', 'acme', 'Web', 'web')
 ensureApp(db, 'acme-admin', 'acme', 'Admin', 'web')
+
+// per-app test accounts + variables (referenced in steps as {{account.*}} / {{var.*}})
+setAccount(db, 'demo-shop-web', 'shopper', {
+  email: 'shopper@example.com',
+  password: 'demo-pass-1',
+  role: 'customer',
+})
+setAccount(db, 'acme-admin', 'admin', {
+  email: 'admin@example.com',
+  password: 'demo-pass-2',
+  role: 'admin',
+})
+setVar(db, 'demo-shop-web', 'baseURL', 'https://demo.shop.example')
 
 // ── requirements (RTM) ────────────────────────────────────────────────────────
 const req = (appKey: string, key: string, title: string, iWant?: string) =>

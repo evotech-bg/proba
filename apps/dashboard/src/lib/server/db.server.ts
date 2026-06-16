@@ -6,15 +6,22 @@ import { fileURLToPath } from 'node:url'
 import { asc, eq } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import {
+  type AppConfigView,
   type ProbaDb,
   apps as appsT,
   artifacts as artifactsT,
   assertions as assertionsT,
   baselines as baselinesT,
+  clearAuthState,
+  deleteAppConfig,
   deriveCaseVerdict,
   ensureApp,
   ensureProject,
   ensureProjectsBootstrap,
+  listAppConfig,
+  listAuthNames,
+  setAccount,
+  setVar,
   slugify,
   flakyRecords as flakyT,
   projects as projectsT,
@@ -410,6 +417,34 @@ export function applyMutation(op: string, a: Json): void {
       }
       break
     }
+    case 'setAccount':
+      setAccount(d, String(a.appKey), String(a.name), (a.fields as Record<string, string>) ?? {}, a.secret !== false)
+      break
+    case 'setVar':
+      setVar(d, String(a.appKey), String(a.name), String(a.value ?? ''), a.secret === true)
+      break
+    case 'deleteConfig':
+      deleteAppConfig(d, String(a.appKey), a.type === 'var' ? 'var' : 'account', String(a.name))
+      break
+    case 'clearAuth':
+      clearAuthState(d, String(a.appKey), String(a.name ?? 'default'))
+      break
+  }
+}
+
+/** Per-app test accounts + variables (secret values masked for the UI) + captured-auth names. */
+export function getAppConfig(appKey: string): AppConfigView & { authNames: string[] } {
+  if (!appKey) return { accounts: [], vars: [], authNames: [] }
+  const { accounts, vars } = listAppConfig(getDb(), appKey)
+  return {
+    accounts: accounts.map((ac) => ({
+      ...ac,
+      fields: ac.secret
+        ? Object.fromEntries(Object.keys(ac.fields).map((k) => [k, '••••••']))
+        : ac.fields,
+    })),
+    vars: vars.map((v) => ({ ...v, value: v.secret ? '••••••' : v.value })),
+    authNames: listAuthNames(getDb(), appKey),
   }
 }
 

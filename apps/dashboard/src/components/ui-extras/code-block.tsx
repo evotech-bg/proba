@@ -44,7 +44,7 @@ export function CodeBlock({
   return (
     <div className={cn("relative group rounded-md bg-panel ring-1 ring-hairline overflow-hidden", className)}>
       <div className="flex items-center justify-between px-3 py-1.5 hairline-b">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{lang}</span>
+        <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">{lang}</span>
         <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 group-hover:opacity-100" onClick={onCopy} aria-label="Copy code">
           {copied ? <Check className="h-3 w-3 text-pass" /> : <Copy className="h-3 w-3" />}
         </Button>

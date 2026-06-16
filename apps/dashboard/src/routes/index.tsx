@@ -25,9 +25,9 @@ function Stat({ label, value, sub, accent, to, children }: {
   const tone = accent === "fail" ? "text-fail" : accent === "warn" ? "text-warn" : accent === "pass" ? "text-pass" : "text-foreground";
   const inner = (
     <div className="rounded-lg ring-1 ring-hairline bg-card p-4 hover:ring-border transition-colors h-full">
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono">{label}</div>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground font-mono">{label}</div>
       <div className={cn("mt-1.5 text-2xl font-semibold tabular-nums tracking-tight", tone)}>{value}</div>
-      {sub && <div className="mt-0.5 text-[11px] text-muted-foreground">{sub}</div>}
+      {sub && <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>}
       {children && <div className="mt-3">{children}</div>}
     </div>
   );
@@ -64,6 +64,10 @@ function Overview() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Overview</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{tests.length} tests · {requirements.length} requirements · {runs.length} runs</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+            Your workbench home — a snapshot of requirement coverage, the latest run's health, open bugs and recent
+            activity for the project and surface selected above.
+          </p>
         </div>
       </div>
 
@@ -84,7 +88,7 @@ function Overview() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-sm font-medium">Pass-rate trend</h2>
-              <p className="text-[11px] text-muted-foreground">Last 12 runs · all environments</p>
+              <p className="text-xs text-muted-foreground">Last 12 runs · all environments</p>
             </div>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -115,7 +119,7 @@ function Overview() {
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {uncovered.map((r) => (
-                <Link key={r.id} to="/requirements" className="inline-flex items-center gap-1.5 rounded-md ring-1 ring-warn/30 bg-warn/10 text-warn px-2 py-1 text-[11px] font-mono hover:bg-warn/15">
+                <Link key={r.id} to="/requirements" className="inline-flex items-center gap-1.5 rounded-md ring-1 ring-warn/30 bg-warn/10 text-warn px-2 py-1 text-xs font-mono hover:bg-warn/15">
                   <AlertTriangle className="h-3 w-3" />{r.key}
                 </Link>
               ))}
@@ -131,7 +135,7 @@ function Overview() {
                     <div className="min-w-0">
                       <span className="font-medium">{a.actor}</span> <span className="text-muted-foreground">{a.action}</span>{" "}
                       {a.target && <span className="font-medium truncate">{a.target}</span>}
-                      <div className="text-[10px] text-muted-foreground font-mono"><TimeAgo date={a.ts} /></div>
+                      <div className="text-xs text-muted-foreground font-mono"><TimeAgo date={a.ts} /></div>
                     </div>
                   </Link>
                 </li>
@@ -147,7 +151,7 @@ function Overview() {
             <FlaskConical className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-sm font-medium">Latest tests</h2>
           </div>
-          <Link to="/tests" className="text-[11px] text-primary hover:underline">View all →</Link>
+          <Link to="/tests" className="text-xs text-primary hover:underline">View all →</Link>
         </div>
         <ul className="divide-y divide-hairline">
           {tests.slice(0, 5).map((t) => (
@@ -155,8 +159,8 @@ function Overview() {
               <Link to="/tests/$testId" params={{ testId: t.id }} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/40">
                 <StatusPill verdict={t.verdict} />
                 <span className="text-[13px] truncate flex-1">{t.title}</span>
-                <span className="text-[10px] font-mono text-muted-foreground">{t.steps.length} steps</span>
-                <span className="text-[10px] font-mono text-muted-foreground tabular-nums w-20 text-right"><TimeAgo date={t.updatedAt} /></span>
+                <span className="text-xs font-mono text-muted-foreground">{t.steps.length} steps</span>
+                <span className="text-xs font-mono text-muted-foreground tabular-nums w-20 text-right"><TimeAgo date={t.updatedAt} /></span>
               </Link>
             </li>
           ))}

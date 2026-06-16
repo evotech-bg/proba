@@ -43,6 +43,13 @@
       "when": 1781560496372,
       "tag": "0005_majestic_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1781621070836,
+      "tag": "0006_app_config",
+      "breakpoints": true
     }
   ]
 }

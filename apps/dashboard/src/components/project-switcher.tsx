@@ -44,7 +44,7 @@ export function ProjectSwitcher() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="text-[11px]">Project</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs">Project</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => setScope({})}>
             <span className="flex-1">All projects</span>
             {!projectKey && <Check className="h-3.5 w-3.5" />}
@@ -82,7 +82,7 @@ export function ProjectSwitcher() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="text-[11px]">Surface</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs">Surface</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => setScope({ projectKey })}>
             <span className="flex-1">All surfaces</span>
             {!activeAppKey && <Check className="h-3.5 w-3.5" />}
@@ -90,7 +90,7 @@ export function ProjectSwitcher() {
           {surfacesInProject.map((a) => (
             <DropdownMenuItem key={a.key} onClick={() => setScope({ projectKey, appKey: a.key })}>
               <span className="flex-1 truncate">{a.name}</span>
-              <span className="text-[10px] font-mono text-muted-foreground mr-1">{a.platform ?? a.key}</span>
+              <span className="text-xs font-mono text-muted-foreground mr-1">{a.platform ?? a.key}</span>
               {activeAppKey === a.key && <Check className="h-3.5 w-3.5" />}
             </DropdownMenuItem>
           ))}
@@ -124,7 +124,7 @@ export function AppTag({ appKey, className }: { appKey?: string; className?: str
   if (!appKey) return null;
   const app = apps.find((a) => a.key === appKey);
   return (
-    <span className={cn("inline-flex items-center h-4 px-1.5 rounded ring-1 ring-hairline bg-panel text-[10px] font-mono text-muted-foreground", className)}>
+    <span className={cn("inline-flex items-center h-4 px-1.5 rounded ring-1 ring-hairline bg-panel text-xs font-mono text-muted-foreground", className)}>
       {app?.name ?? appKey}
     </span>
   );

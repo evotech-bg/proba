@@ -72,6 +72,10 @@ function TestsList() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Tests</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{tests.length} total · {rows.length} shown</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+            Every test you own, as a durable artifact. Open one to edit its steps and export the synced Gherkin, JSON
+            and Playwright views — the agent drafts, you stay the owner.
+          </p>
         </div>
         <Button size="sm" onClick={onNew}>+ New test</Button>
       </div>
@@ -102,7 +106,7 @@ function TestsList() {
       <div className="rounded-lg ring-1 ring-hairline bg-card overflow-hidden">
         <table className="w-full text-[13px]">
           <thead className="hairline-b bg-panel/40">
-            <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground font-mono">
+            <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground font-mono">
               <th className="w-8 px-3 py-2"></th>
               <th className="px-2 py-2">Title</th>
               <th className="px-2 py-2 w-16">Pol</th>
@@ -124,7 +128,7 @@ function TestsList() {
                   {t.tags.length > 0 && (
                     <div className="flex gap-1 mt-0.5">
                       {t.tags.slice(0, 4).map((tag) => (
-                        <span key={tag} className="text-[10px] font-mono text-muted-foreground">#{tag}</span>
+                        <span key={tag} className="text-xs font-mono text-muted-foreground">#{tag}</span>
                       ))}
                     </div>
                   )}
@@ -134,7 +138,7 @@ function TestsList() {
                 <td className="px-2 py-2.5"><LifecycleBadge lifecycle={t.lifecycle} /></td>
                 <td className="px-2 py-2.5 tabular-nums text-right text-muted-foreground">{t.steps.length}</td>
                 <td className="px-2 py-2.5"><StatusPill verdict={t.verdict} /></td>
-                <td className="px-2 py-2.5 text-[11px] font-mono text-muted-foreground">{<TimeAgo date={t.updatedAt} />}</td>
+                <td className="px-2 py-2.5 text-xs font-mono text-muted-foreground">{<TimeAgo date={t.updatedAt} />}</td>
               </tr>
             ))}
             {rows.length === 0 && (
@@ -149,7 +153,7 @@ function TestsList() {
           <div className="px-4 py-2.5 hairline-b flex items-center gap-2">
             <FileCode className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-sm font-medium">Imported</h2>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-xs font-mono text-muted-foreground">
               {imported.files.length} file{imported.files.length === 1 ? "" : "s"} · read-only · from {imported.dir}
             </span>
           </div>
@@ -165,8 +169,8 @@ function TestsList() {
                   >
                     {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                     <span className="font-mono text-[12px] text-primary truncate">{f.path}</span>
-                    <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 rounded ring-1 ring-hairline bg-panel text-muted-foreground">{f.kind}</span>
-                    <span className="text-[10px] font-mono text-muted-foreground ml-auto">{f.tests.length} test{f.tests.length === 1 ? "" : "s"} · imported</span>
+                    <span className="text-xs font-mono uppercase tracking-wider px-1.5 rounded ring-1 ring-hairline bg-panel text-muted-foreground">{f.kind}</span>
+                    <span className="text-xs font-mono text-muted-foreground ml-auto">{f.tests.length} test{f.tests.length === 1 ? "" : "s"} · imported</span>
                   </button>
                   {open && (
                     <div className="px-4 pb-3 space-y-2">
@@ -175,12 +179,12 @@ function TestsList() {
                           <li key={i} className="text-[12px] flex items-center gap-2">
                             <span className="text-muted-foreground">•</span>
                             <span className="truncate">{t.title}</span>
-                            <span className="text-[10px] font-mono text-muted-foreground/70">(imported)</span>
+                            <span className="text-xs font-mono text-muted-foreground/70">(imported)</span>
                           </li>
                         ))}
-                        {f.tests.length === 0 && <li className="text-[11px] text-muted-foreground">No named tests parsed.</li>}
+                        {f.tests.length === 0 && <li className="text-xs text-muted-foreground">No named tests parsed.</li>}
                       </ul>
-                      <pre className="text-[10px] font-mono bg-panel ring-1 ring-hairline rounded p-2 max-h-72 overflow-auto whitespace-pre-wrap">{f.code}</pre>
+                      <pre className="text-xs font-mono bg-panel ring-1 ring-hairline rounded p-2 max-h-72 overflow-auto whitespace-pre-wrap">{f.code}</pre>
                     </div>
                   )}
                 </li>

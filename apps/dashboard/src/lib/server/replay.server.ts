@@ -11,8 +11,11 @@ import {
   artifacts as artifactsT,
   assertions as assertionsT,
   baselines as baselinesT,
+  buildResolver,
   createBugTaskFromRun,
+  getAuthState,
   resolveBugTaskOnPass,
+  resolveStepValues,
   results as resultsT,
   steps as stepsT,
   suiteCases as suiteCasesT,
@@ -46,11 +49,18 @@ export interface ReplayResult {
   runId: string; total: number; passed: number; failed: number; blocked: number; failures: ReplayFailure[]
 }
 
-export async function replayCase(caseId: string): Promise<ReplayResult> {
+export async function replayCase(caseId: string, opts: { account?: string } = {}): Promise<ReplayResult> {
   const d = getDb()
   const stepRows = d.select().from(stepsT).where(eq(stepsT.caseId, caseId)).orderBy(asc(stepsT.ordinal)).all()
-  const [run] = d.insert(runsT).values({ environment: 'replay' }).returning().all()
+  const env = opts.account ? `replay · ${opts.account}` : 'replay'
+  const [run] = d.insert(runsT).values({ environment: env }).returning().all()
   mkdirSync(SHOTS_DIR, { recursive: true })
+  // resolve {{account.*}}/{{var.*}} against the case's app config (templates stay in storage).
+  // a variation run also binds the generic {{account.<field>}} to opts.account.
+  const caseApp = d.select().from(testCasesT).where(eq(testCasesT.id, caseId)).all()[0]?.appKey
+  const vars = caseApp ? buildResolver(d, caseApp, opts.account) : {}
+  // reuse captured auth so gated routes work without re-login steps (prefer the variation's account)
+  const savedAuth = caseApp ? (getAuthState(d, caseApp, opts.account) ?? getAuthState(d, caseApp)) : undefined
 
   let web: WebSession | undefined
   const failures: ReplayFailure[] = []
@@ -63,10 +73,13 @@ export async function replayCase(caseId: string): Promise<ReplayResult> {
   try {
     for (const s of stepRows) {
       const asserts = d.select().from(assertionsT).where(eq(assertionsT.stepId, s.id)).all().map((a) => a.spec)
-      const spec = { kind: s.kind, action: s.action, target: (s.target ?? undefined) as never, params: (s.params ?? undefined) as never, assertions: asserts as never }
+      const spec = resolveStepValues(
+        { kind: s.kind, action: s.action, target: (s.target ?? undefined) as never, params: (s.params ?? undefined) as never, assertions: asserts as never },
+        vars,
+      )
       let res: StepResult
       if (s.kind === 'web') {
-        web ??= await WebSession.launch({ headless: true, snapshotDir: SNAPSHOT_DIR, recordVideoDir: join(VIDEO_TMP, run!.id) })
+        web ??= await WebSession.launch({ headless: true, snapshotDir: SNAPSHOT_DIR, recordVideoDir: join(VIDEO_TMP, run!.id), ...(savedAuth ? { storageState: savedAuth as { cookies?: unknown[]; origins?: unknown[] } } : {}) })
         res = await web.execute(spec)
       } else if (s.kind === 'api') {
         res = await executeApi(spec)
@@ -170,21 +183,58 @@ export interface SuiteReplayResult {
   cases: number
   casesPassed: number
   casesFailed: number
-  results: { caseId: string; passed: number; failed: number; blocked: number }[]
+  results: { caseId: string; account?: string; passed: number; failed: number; blocked: number }[]
+  /** present when run as a matrix: one entry per account variation */
+  variations?: { account: string; casesPassed: number; casesFailed: number }[]
 }
 
-/** Replay every case in a suite (sequentially) and aggregate. */
-export async function replaySuite(suiteId: string): Promise<SuiteReplayResult> {
+/**
+ * Replay every case in a suite (sequentially) and aggregate.
+ * Pass `accounts` to run the whole suite once PER account (a variation matrix):
+ * each pass binds {{account.<field>}} to that account and injects its saved auth.
+ */
+export async function replaySuite(
+  suiteId: string,
+  opts: { accounts?: string[] } = {},
+): Promise<SuiteReplayResult> {
   const d = getDb()
-  const caseIds = d.select().from(suiteCasesT).where(eq(suiteCasesT.suiteId, suiteId)).all()
-    .sort((a, b) => a.ordinal - b.ordinal).map((m) => m.caseId)
+  const caseIds = d
+    .select()
+    .from(suiteCasesT)
+    .where(eq(suiteCasesT.suiteId, suiteId))
+    .all()
+    .sort((a, b) => a.ordinal - b.ordinal)
+    .map((m) => m.caseId)
+
+  const accounts = opts.accounts?.filter(Boolean) ?? []
+  const passes = accounts.length ? accounts : [undefined]
   const results: SuiteReplayResult['results'] = []
-  let casesPassed = 0, casesFailed = 0
-  for (const caseId of caseIds) {
-    const r = await replayCase(caseId)
-    results.push({ caseId, passed: r.passed, failed: r.failed, blocked: r.blocked })
-    if (r.failed + r.blocked === 0) casesPassed++
-    else casesFailed++
+  const variations: NonNullable<SuiteReplayResult['variations']> = []
+  let casesPassed = 0
+  let casesFailed = 0
+
+  for (const account of passes) {
+    let vPassed = 0
+    let vFailed = 0
+    for (const caseId of caseIds) {
+      const r = await replayCase(caseId, { account })
+      results.push({ caseId, account, passed: r.passed, failed: r.failed, blocked: r.blocked })
+      if (r.failed + r.blocked === 0) {
+        casesPassed++
+        vPassed++
+      } else {
+        casesFailed++
+        vFailed++
+      }
+    }
+    if (account) variations.push({ account, casesPassed: vPassed, casesFailed: vFailed })
   }
-  return { cases: caseIds.length, casesPassed, casesFailed, results }
+
+  return {
+    cases: caseIds.length * passes.length,
+    casesPassed,
+    casesFailed,
+    results,
+    ...(variations.length ? { variations } : {}),
+  }
 }

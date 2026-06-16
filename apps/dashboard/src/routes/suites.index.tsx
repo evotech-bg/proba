@@ -37,11 +37,15 @@ function SuitesPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Suites</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{suites.length} suites · group cases and run them together</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+            Bundle related tests into a suite and run them together to get a single pass/fail verdict across all of its
+            cases in one go.
+          </p>
         </div>
       </div>
 
       <section className="rounded-lg ring-1 ring-hairline bg-card p-4">
-        <h2 className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono mb-2">New suite</h2>
+        <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-mono mb-2">New suite</h2>
         <div className="flex gap-2">
           <Input ref={nameRef} placeholder="Suite name (e.g. Smoke)" className="h-8 flex-1" onKeyDown={(e) => e.key === "Enter" && add()} />
           <Select defaultValue="smoke" onValueChange={(v) => { kindRef.current = v; }}>
@@ -63,9 +67,9 @@ function SuitesPage() {
                   <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium">{s.name}</div>
-                    <div className="text-[11px] text-muted-foreground font-mono">{s.kind} · {s.caseIds.length} cases</div>
+                    <div className="text-xs text-muted-foreground font-mono">{s.kind} · {s.caseIds.length} cases</div>
                   </div>
-                  <div className="text-[11px] font-mono"><span className="text-pass">{s.passed}✓</span> <span className="text-fail">{s.failed}✗</span></div>
+                  <div className="text-xs font-mono"><span className="text-pass">{s.passed}✓</span> <span className="text-fail">{s.failed}✗</span></div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </Link>
               </li>

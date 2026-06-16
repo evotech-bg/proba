@@ -59,6 +59,10 @@ function Requirements() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Requirements <span className="text-muted-foreground font-normal">· {covered}/{requirements.length} covered</span></h1>
           <p className="text-sm text-muted-foreground mt-0.5">Every requirement should be exercised by at least one positive and one negative test.</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+            Your traceability matrix — each requirement and the tests that cover it, so you can see at a glance what is
+            verified and where the gaps are.
+          </p>
         </div>
       </div>
 
@@ -90,7 +94,7 @@ function Requirements() {
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-[11px] text-muted-foreground font-mono uppercase tracking-wider">Filter:</span>
+        <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Filter:</span>
         {(["all", "covered", "uncovered"] as const).map((f) => (
           <button
             key={f}
@@ -106,7 +110,7 @@ function Requirements() {
       <div className="rounded-lg ring-1 ring-hairline bg-card overflow-hidden">
         <table className="w-full text-[13px]">
           <thead className="hairline-b bg-panel/40">
-            <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground font-mono">
+            <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground font-mono">
               <th className="px-3 py-2 w-24">Key</th>
               <th className="px-2 py-2">Title</th>
               <th className="px-2 py-2 w-44">Coverage</th>
@@ -131,7 +135,7 @@ function Requirements() {
                   <td className="px-2 py-2.5">
                     <div className="flex flex-wrap gap-1">
                       {linked.map((t) => (
-                        <span key={t.id} className="inline-flex items-center gap-1 rounded ring-1 ring-hairline bg-panel text-[11px] pl-1.5 pr-1 py-0.5">
+                        <span key={t.id} className="inline-flex items-center gap-1 rounded ring-1 ring-hairline bg-panel text-xs pl-1.5 pr-1 py-0.5">
                           <Link to="/tests/$testId" params={{ testId: t.id }} className="hover:text-primary truncate max-w-[200px]">{t.title}</Link>
                           <button onClick={() => unlinkRequirement(r.id, t.id)} aria-label="Unlink" className="text-muted-foreground hover:text-fail">
                             <X className="h-3 w-3" />
