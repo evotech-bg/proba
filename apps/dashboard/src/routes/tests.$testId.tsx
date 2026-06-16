@@ -29,9 +29,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  ResizableHandle, ResizablePanel, ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import { toCanonical, toGherkin, toPlaywright } from "@/lib/artifact-sync";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -67,6 +64,7 @@ function TestEditor() {
   const [running, setRunning] = useState(false);
   const [replayResult, setReplayResult] = useState<ReplayInfo | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [openArtifact, setOpenArtifact] = useState<"gherkin" | "json" | "ts" | null>(null);
   const lastTitleRef = useRef<string | undefined>(test?.title);
 
   // autosave flash
@@ -135,19 +133,23 @@ function TestEditor() {
             onChange={(e) => { patchTest(test.id, { title: e.target.value }); }}
             className="text-lg font-semibold h-9 bg-transparent border-0 px-1 -ml-1 focus-visible:bg-card focus-visible:ring-1"
           />
+          <p className="text-sm text-muted-foreground mt-1.5 mb-1 max-w-2xl leading-relaxed px-1">
+            The test editor. Edit the steps below — each step's configuration (where to go, which element, what to type)
+            is shown inline — and the Gherkin, JSON and Playwright artifacts regenerate from this canonical form.
+          </p>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span className="text-[11px] font-mono text-muted-foreground">{test.id}</span>
+            <span className="text-xs font-mono text-muted-foreground">{test.id}</span>
             <span className="text-muted-foreground">·</span>
             <Select value={test.polarity} onValueChange={(v: Polarity) => patchTest(test.id, { polarity: v })}>
-              <SelectTrigger className="h-6 w-auto gap-1.5 px-1.5 py-0 border-0 bg-transparent hover:bg-accent text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 w-auto gap-1.5 px-1.5 py-0 border-0 bg-transparent hover:bg-accent text-xs"><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="positive">Positive</SelectItem><SelectItem value="negative">Negative</SelectItem></SelectContent>
             </Select>
             <Select value={test.lifecycle} onValueChange={(v: Lifecycle) => patchTest(test.id, { lifecycle: v })}>
-              <SelectTrigger className="h-6 w-auto gap-1.5 px-1.5 py-0 border-0 bg-transparent hover:bg-accent text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 w-auto gap-1.5 px-1.5 py-0 border-0 bg-transparent hover:bg-accent text-xs"><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="draft">Draft</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="modified">Modified</SelectItem><SelectItem value="retired">Retired</SelectItem></SelectContent>
             </Select>
             <Select value={test.technique} onValueChange={(v: Technique) => patchTest(test.id, { technique: v })}>
-              <SelectTrigger className="h-6 w-auto gap-1.5 px-1.5 py-0 border-0 bg-transparent hover:bg-accent text-[11px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 w-auto gap-1.5 px-1.5 py-0 border-0 bg-transparent hover:bg-accent text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {(["ep", "bva", "decision", "pairwise", "state", "exploratory", "manual"] as Technique[]).map((t) => (
                   <SelectItem key={t} value={t}>{t}</SelectItem>
@@ -158,7 +160,7 @@ function TestEditor() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={cn("text-[11px] font-mono text-muted-foreground transition-opacity flex items-center gap-1", savedFlash ? "opacity-100" : "opacity-60")}>
+          <span className={cn("text-xs font-mono text-muted-foreground transition-opacity flex items-center gap-1", savedFlash ? "opacity-100" : "opacity-60")}>
             <Check className="h-3 w-3 text-pass" /> saved
           </span>
           <Button size="sm" className="h-8 gap-1.5" onClick={onRun} disabled={running}>
@@ -189,7 +191,7 @@ function TestEditor() {
                 {replayResult.failures.map((f, i) => (
                   <li key={i} className="rounded-md bg-canvas/60 ring-1 ring-fail/20 px-2.5 py-1.5">
                     <div className="flex items-center gap-2 text-[12px]">
-                      {f.kind && <span className="font-mono uppercase text-[10px] text-muted-foreground">{f.kind}</span>}
+                      {f.kind && <span className="font-mono uppercase text-xs text-muted-foreground">{f.kind}</span>}
                       <span className="font-mono font-medium text-foreground">step {f.ordinal}: {f.action}</span>
                       {f.description && <span className="text-muted-foreground">— {f.description}</span>}
                     </div>
@@ -207,7 +209,7 @@ function TestEditor() {
         <div className="space-y-4 min-w-0">
           <section className="rounded-lg ring-1 ring-hairline bg-card">
             <div className="flex items-center justify-between px-4 py-2.5 hairline-b">
-              <h2 className="text-sm font-medium">Steps <span className="text-muted-foreground font-mono text-[11px] ml-1">{test.steps.length}</span></h2>
+              <h2 className="text-sm font-medium">Steps <span className="text-muted-foreground font-mono text-xs ml-1">{test.steps.length}</span></h2>
               <Button size="sm" variant="ghost" className="h-7 text-[12px] gap-1" onClick={() => {
                 addStep(test.id, {
                   id: newId(), ordinal: test.steps.length + 1, kind: "web",
@@ -267,36 +269,53 @@ function TestEditor() {
             <div className="flex items-center justify-between px-4 py-2.5 hairline-b">
               <div>
                 <h2 className="text-sm font-medium">Artifact trinity</h2>
-                <p className="text-[11px] text-muted-foreground">Gherkin (intent) ↔ JSON (canonical truth) ↔ Playwright (executable). Editing steps regenerates all three.</p>
+                <p className="text-xs text-muted-foreground">Gherkin (intent) ↔ JSON (canonical truth) ↔ Playwright (executable). Editing steps regenerates all three.</p>
               </div>
               <div className="flex gap-1.5">
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" onClick={() => download(`${slugify(test.title)}.feature`, gherkin)}>
+                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => download(`${slugify(test.title)}.feature`, gherkin)}>
                   <Download className="h-3 w-3" /> .feature
                 </Button>
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" onClick={() => download(`${slugify(test.title)}.spec.ts`, playwright)}>
+                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => download(`${slugify(test.title)}.spec.ts`, playwright)}>
                   <Download className="h-3 w-3" /> .spec.ts
                 </Button>
               </div>
             </div>
-            <ResizablePanelGroup orientation="horizontal" className="min-h-[360px]">
-              <ResizablePanel defaultSize={33} minSize={20}>
-                <div className="p-3 h-full">
-                  <CodeBlock key={`g-${pulse}`} code={gherkin} lang="gherkin" pulse={pulse > 0} className="h-full" />
-                </div>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={34} minSize={20}>
-                <div className="p-3 h-full">
-                  <CodeBlock key={`j-${pulse}`} code={canonical} lang="json" pulse={pulse > 0} className="h-full" />
-                </div>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={33} minSize={20}>
-                <div className="p-3 h-full">
-                  <CodeBlock key={`t-${pulse}`} code={playwright} lang="ts" pulse={pulse > 0} className="h-full" />
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+            <div className="px-3 py-2.5 flex flex-wrap gap-1.5">
+              {([["gherkin", "Gherkin"], ["json", "JSON"], ["ts", "Playwright"]] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setOpenArtifact((o) => (o === key ? null : key))}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium ring-1 transition",
+                    openArtifact === key
+                      ? "ring-primary/40 bg-primary/10 text-primary"
+                      : "ring-hairline text-muted-foreground hover:bg-muted/50",
+                  )}
+                  aria-expanded={openArtifact === key}
+                >
+                  {openArtifact === key ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  {label}
+                </button>
+              ))}
+            </div>
+            {openArtifact ? (
+              <div className="px-3 pb-3">
+                {openArtifact === "gherkin" && (
+                  <CodeBlock key={`g-${pulse}`} code={gherkin} lang="gherkin" pulse={pulse > 0} className="max-h-[440px]" />
+                )}
+                {openArtifact === "json" && (
+                  <CodeBlock key={`j-${pulse}`} code={canonical} lang="json" pulse={pulse > 0} className="max-h-[440px]" />
+                )}
+                {openArtifact === "ts" && (
+                  <CodeBlock key={`t-${pulse}`} code={playwright} lang="ts" pulse={pulse > 0} className="max-h-[440px]" />
+                )}
+              </div>
+            ) : (
+              <p className="px-4 pb-3 text-xs text-muted-foreground">
+                Click a view to expand it, then use the copy button in its corner.
+              </p>
+            )}
           </section>
         </div>
 
@@ -309,7 +328,7 @@ function TestEditor() {
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {linkedReqs.map((r) => (
-                  <span key={r.id} className="inline-flex items-center gap-1.5 rounded-md ring-1 ring-primary/30 bg-primary/10 text-primary px-2 py-1 text-[11px] font-mono">{r.key}</span>
+                  <span key={r.id} className="inline-flex items-center gap-1.5 rounded-md ring-1 ring-primary/30 bg-primary/10 text-primary px-2 py-1 text-xs font-mono">{r.key}</span>
                 ))}
               </div>
             )}
@@ -329,13 +348,13 @@ function TestEditor() {
                       className="flex items-center gap-2 text-[12px] rounded-md px-2 py-1 -mx-2 hover:bg-accent/50 transition-colors group"
                     >
                       <StatusPill verdict={res!.verdict} />
-                      <span className="font-mono text-muted-foreground text-[11px] tabular-nums">{(res!.durationMs / 1000).toFixed(1)}s</span>
+                      <span className="font-mono text-muted-foreground text-xs tabular-nums">{(res!.durationMs / 1000).toFixed(1)}s</span>
                       {run.visualDiff?.video && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] text-fail" title="failure clip available">
+                        <span className="inline-flex items-center gap-0.5 text-xs text-fail" title="failure clip available">
                           <Film className="h-3 w-3" /> clip
                         </span>
                       )}
-                      <span className="text-muted-foreground text-[11px] ml-auto">{<TimeAgo date={run.startedAt} />}</span>
+                      <span className="text-muted-foreground text-xs ml-auto">{<TimeAgo date={run.startedAt} />}</span>
                       <ExternalLink className="h-3 w-3 text-muted-foreground/0 group-hover:text-muted-foreground transition-colors" />
                     </Link>
                   </li>
@@ -355,7 +374,7 @@ function TestEditor() {
                 <Camera className="h-5 w-5" />
               </div>
             )}
-            <p className="mt-2 text-[11px] text-muted-foreground">{test.latestScreenshot ? "From the last replay" : "Run a replay to capture one"} · {<TimeAgo date={test.updatedAt} />}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{test.latestScreenshot ? "From the last replay" : "Run a replay to capture one"} · {<TimeAgo date={test.updatedAt} />}</p>
           </div>
         </aside>
       </div>
@@ -418,7 +437,7 @@ function StepRow({
           >
             <GripVertical className="h-3.5 w-3.5" />
           </div>
-          <span className="text-[10px] font-mono text-muted-foreground tabular-nums">{step.ordinal}</span>
+          <span className="text-xs font-mono text-muted-foreground tabular-nums">{step.ordinal}</span>
         </div>
 
         <button onClick={() => setOpen((o) => !o)} className="pt-1.5 text-muted-foreground hover:text-foreground" aria-label="Toggle step">
@@ -426,7 +445,7 @@ function StepRow({
         </button>
 
         <Select value={step.kind} onValueChange={(v: StepKind) => onPatch({ kind: v })}>
-          <SelectTrigger className="h-7 w-[80px] text-[11px] font-mono uppercase"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-7 w-[80px] text-xs font-mono uppercase"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="web">web</SelectItem><SelectItem value="api">api</SelectItem><SelectItem value="db">db</SelectItem></SelectContent>
         </Select>
         <KindBadge kind={step.kind} className="mt-1" />
@@ -442,14 +461,17 @@ function StepRow({
           {!open && stepSummary(step) && (
             <button
               onClick={() => setOpen(true)}
-              className="block w-full text-left text-[11px] font-mono text-muted-foreground truncate hover:text-foreground"
+              className="block w-full text-left text-xs font-mono text-muted-foreground truncate hover:text-foreground"
               title="Edit step config"
             >
               {stepSummary(step)}
             </button>
           )}
-          {!open && !stepSummary(step) && (PARAM_FIELDS[step.action] || step.kind === "web") && (
-            <button onClick={() => setOpen(true)} className="block text-left text-[11px] text-warn/80 hover:text-warn">
+          {!open && step.action === "wait" && (
+            <span className="block text-xs text-muted-foreground">waits for the page to settle (network idle)</span>
+          )}
+          {!open && step.action !== "wait" && !stepSummary(step) && (PARAM_FIELDS[step.action] || step.kind === "web") && (
+            <button onClick={() => setOpen(true)} className="block text-left text-xs text-warn/80 hover:text-warn">
               ⚠ needs config — set {PARAM_FIELDS[step.action]?.[0]?.label.toLowerCase() ?? "a target"}
             </button>
           )}
@@ -469,7 +491,7 @@ function StepRow({
         <div className="mt-3 ml-12 space-y-3">
           {step.kind === "web" && (
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">Target locator</div>
+              <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">Target locator</div>
               <LocatorEditor value={step.target} onChange={(v) => onPatch({ target: v })} />
             </div>
           )}
@@ -481,13 +503,13 @@ function StepRow({
             if (schema.length === 0 && extra.length === 0) return null;
             return (
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+                <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
                   {step.action === "navigate" ? "Where to go" : "Inputs"}
                 </div>
                 <div className="space-y-1.5">
                   {schema.map((f) => (
                     <div key={f.key}>
-                      <div className="text-[10px] text-muted-foreground mb-0.5">{f.label}</div>
+                      <div className="text-xs text-muted-foreground mb-0.5">{f.label}</div>
                       <Input
                         value={params[f.key] ?? ""}
                         onChange={(e) => onPatch({ params: { ...params, [f.key]: e.target.value } })}
@@ -498,7 +520,7 @@ function StepRow({
                   ))}
                   {extra.map((k) => (
                     <div key={k} className="flex items-center gap-2">
-                      <span className="text-[11px] font-mono text-muted-foreground w-20">{k}</span>
+                      <span className="text-xs font-mono text-muted-foreground w-20">{k}</span>
                       <Input value={params[k]} onChange={(e) => onPatch({ params: { ...params, [k]: e.target.value } })} className="h-7 text-[12px] font-mono" />
                     </div>
                   ))}
@@ -508,20 +530,20 @@ function StepRow({
           })()}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Assertions <span className="ml-1 text-muted-foreground/70">{step.assertions.length}</span></div>
+              <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Assertions <span className="ml-1 text-muted-foreground/70">{step.assertions.length}</span></div>
               <button
-                className="text-[11px] text-primary hover:underline"
+                className="text-xs text-primary hover:underline"
                 onClick={() => onPatch({ assertions: [...step.assertions, { id: newId(), type: "dom", spec: "visible" }] })}
               >+ add assertion</button>
             </div>
             {step.assertions.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">No assertions on this step.</p>
+              <p className="text-xs text-muted-foreground">No assertions on this step.</p>
             ) : (
               <ul className="space-y-1">
                 {step.assertions.map((a) => (
                   <li key={a.id} className="flex items-center gap-2">
                     <Select value={a.type} onValueChange={(v: AssertionType) => onPatch({ assertions: step.assertions.map((x) => x.id === a.id ? { ...x, type: v } : x) })}>
-                      <SelectTrigger className="h-7 w-[100px] text-[11px] font-mono"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-7 w-[100px] text-xs font-mono"><SelectValue /></SelectTrigger>
                       <SelectContent>{(["dom","visual","layout","a11y","http","schema","db_row","sla"] as AssertionType[]).map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                     </Select>
                     <Input value={a.spec} onChange={(e) => onPatch({ assertions: step.assertions.map((x) => x.id === a.id ? { ...x, spec: e.target.value } : x) })} className="h-7 text-[12px] font-mono flex-1" />

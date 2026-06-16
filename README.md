@@ -7,7 +7,7 @@
 [![CI](https://github.com/evotech-bg/proba/actions/workflows/ci.yml/badge.svg)](https://github.com/evotech-bg/proba/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node 22+](https://img.shields.io/badge/node-22%2B-3c873a.svg)](https://nodejs.org)
-[![Tests](https://img.shields.io/badge/tests-70%20passing-brightgreen.svg)](#status)
+[![Tests](https://img.shields.io/badge/tests-83%20passing-brightgreen.svg)](#status)
 [![MCP](https://img.shields.io/badge/MCP-stdio%20server-7c3aed.svg)](#install-it-in-your-agent-mcp)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-orange.svg)](CONTRIBUTING.md)
 
@@ -65,8 +65,17 @@ The highlights:
 - **Durable agent memory — the moat.** Discovered selectors, app quirks, auth state, exploration
   notes and self-healing decisions persist across sessions. The agent resumes instead of
   re-exploring. This is the gap today's tools leave open.
+- **Log in once, reuse everywhere.** Capture a session's auth with `proba_save_auth`; replays and
+  new sessions for that app start already authenticated (Playwright `storageState` is injected), so
+  gated routes work without re-login steps in every test.
 - **Stable locators by construction.** `getByRole` → text/label → `data-testid`; positional CSS
   and XPath are rejected at emit time, so tests do not rot on the next redesign.
+- **Per-app accounts & variables.** Store named test accounts and variables once, reference them in
+  any step as `{{account.client.email}}` or `{{var.baseURL}}` — resolved at run time. Credentials
+  stay out of the test artifacts, and one flow runs against different accounts/roles.
+- **Run a suite as a matrix.** Write a flow with the generic `{{account.email}}`/`{{account.password}}`,
+  then run the suite once per selected account — each pass binds those to that account and injects its
+  saved login, so you validate every role from one suite.
 - **One spine, three step kinds.** web / API / DB, with cross-layer assertions (UI → API → DB).
 - **Closes the loop — and heals.** A failed replay auto-files a board bug ticket (title, failing
   step, screenshot); the agent can `proba_diagnose` it (Proba surfaces candidate locators from the
@@ -162,8 +171,9 @@ extension's MCP settings), and **Claude Desktop** (`claude_desktop_config.json`)
 | Area | Tools |
 | --- | --- |
 | Projects & scope | `proba_project_list` · `proba_project_create` · `proba_app_create` |
-| Sessions & memory | `proba_session_open` · `proba_remember` · `proba_snapshot` · `proba_close_session` |
-| Recording | `proba_start_case` · `proba_act` · `proba_request` · `proba_finalize_test` · `proba_replay` |
+| Accounts & config | `proba_account_set` · `proba_config_set` · `proba_config_list` · `proba_config_delete` |
+| Sessions & memory | `proba_session_open` · `proba_remember` · `proba_save_auth` · `proba_snapshot` · `proba_close_session` |
+| Recording | `proba_start_case` · `proba_act` · `proba_request` · `proba_finalize_test` · `proba_replay` · `proba_replay_suite` |
 | Self-heal | `proba_diagnose` (why a step failed + live candidate locators) · `proba_patch_step` (fix it, record healing) |
 | Quality checks | `proba_layout_audit` · `proba_a11y_scan` · `proba_diff` · `proba_design_cases` |
 | Task board | `proba_task_list` · `proba_task_create` · `proba_task_claim` · `proba_task_update` |
@@ -218,10 +228,11 @@ Copy `.env.example` to `.env` (optional — defaults work out of the box):
 
 ## Status
 
-Actively built; **70 tests passing** across the workspace, typechecked and linted in CI. The core
-loop (drive → own artifacts → replay → evidence → bug ticket → memory) works end to end. On the
-roadmap: live external trackers (Jira / Trello transports), an optional auth gate, and a
-vendor-model perceptual diff. See [CONTRIBUTING.md](CONTRIBUTING.md) to get involved.
+Actively built; **83 tests passing** across the workspace, typechecked and linted in CI. The core
+loop (drive → own artifacts → replay → evidence → bug ticket → memory) works end to end. The
+embedded board ships today; **live external trackers (Jira / Trello transports) are code-complete and
+wired through the MCP env — they just need your credentials.** Also on the roadmap: a vendor-model
+perceptual diff. See [CONTRIBUTING.md](CONTRIBUTING.md) to get involved.
 
 ## Contributing
 

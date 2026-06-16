@@ -88,7 +88,7 @@ export function CommandPalette({ open, setOpen }: { open: boolean; setOpen: (v: 
             >
               <FlaskConical className="h-3.5 w-3.5" />
               <span className="truncate">{t.title}</span>
-              <span className="ml-auto text-[10px] font-mono text-muted-foreground">{t.id}</span>
+              <span className="ml-auto text-xs font-mono text-muted-foreground">{t.id}</span>
             </CommandItem>
           ))}
         </CommandGroup>

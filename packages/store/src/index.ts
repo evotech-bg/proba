@@ -22,3 +22,20 @@ export {
   ensureProjectsBootstrap,
   slugify,
 } from './projects'
+export {
+  setAccount,
+  setVar,
+  deleteAppConfig,
+  listAppConfig,
+  buildResolver,
+  resolveTemplate,
+  resolveStepValues,
+  hasTemplate,
+  saveAuthState,
+  getAuthState,
+  listAuthNames,
+  clearAuthState,
+  type AccountEntry,
+  type VarEntry,
+  type AppConfigView,
+} from './config'

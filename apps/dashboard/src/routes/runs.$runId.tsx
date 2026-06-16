@@ -45,6 +45,10 @@ function RunDetail() {
         <div className="flex-1">
           <h1 className="text-xl font-semibold tracking-tight">Run <span className="font-mono">{run.id}</span></h1>
           <p className="text-sm text-muted-foreground mt-0.5 font-mono">{run.environment} · {run.buildRef} · {<TimeAgo date={run.startedAt} />} · {(run.durationMs / 1000).toFixed(1)}s</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+            Full evidence for one run — every step's result and screenshot, the console and network logs captured during
+            execution, and the failure clip kept when it failed.
+          </p>
         </div>
         <div className="text-[12px] font-mono"><span className="text-pass">{run.passed} pass</span> · <span className="text-fail">{run.failed} fail</span> · <span className="text-warn">{run.blocked} blocked</span></div>
       </div>
@@ -66,13 +70,13 @@ function RunDetail() {
                     ) : (
                       <span className="flex-1 text-[13px] font-medium truncate">{cr.caseId}</span>
                     )}
-                    <span className="text-[11px] font-mono text-muted-foreground tabular-nums">{(cr.durationMs / 1000).toFixed(1)}s</span>
+                    <span className="text-xs font-mono text-muted-foreground tabular-nums">{(cr.durationMs / 1000).toFixed(1)}s</span>
                   </div>
                   <ol className="mt-2 ml-2 space-y-1">
                     {cr.steps.map((s, i) => {
                       const step = t?.steps.find((st) => st.id === s.stepId);
                       return (
-                        <li key={s.stepId} className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
+                        <li key={s.stepId} className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
                           <span className="tabular-nums w-5">{i + 1}.</span>
                           {step && <KindBadge kind={step.kind} />}
                           <span className="flex-1 truncate text-foreground/80">{step?.action ?? "—"}</span>
@@ -93,13 +97,13 @@ function RunDetail() {
             <h2 className="text-sm font-medium mb-3">Evidence</h2>
             <Tabs defaultValue={vd?.video ? "trace" : "screenshot"}>
               <TabsList className="grid grid-cols-4 h-8">
-                <TabsTrigger value="screenshot" className="text-[10px] gap-1"><Camera className="h-3 w-3" /> Shots</TabsTrigger>
-                <TabsTrigger value="trace" className="text-[10px] gap-1">
+                <TabsTrigger value="screenshot" className="text-xs gap-1"><Camera className="h-3 w-3" /> Shots</TabsTrigger>
+                <TabsTrigger value="trace" className="text-xs gap-1">
                   <Film className="h-3 w-3" /> Clip
                   {vd?.video && <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-fail" />}
                 </TabsTrigger>
-                <TabsTrigger value="console" className="text-[10px] gap-1"><Terminal className="h-3 w-3" /> Console</TabsTrigger>
-                <TabsTrigger value="network" className="text-[10px] gap-1"><Globe className="h-3 w-3" /> Net</TabsTrigger>
+                <TabsTrigger value="console" className="text-xs gap-1"><Terminal className="h-3 w-3" /> Console</TabsTrigger>
+                <TabsTrigger value="network" className="text-xs gap-1"><Globe className="h-3 w-3" /> Net</TabsTrigger>
               </TabsList>
               <TabsContent value="screenshot" className="mt-3">
                 {actual ? (
@@ -123,16 +127,16 @@ function RunDetail() {
                 {vd?.video ? (
                   <div className="space-y-1.5">
                     <video src={`${vd.video}?v=${run.id}`} controls className="w-full rounded ring-1 ring-fail/30" />
-                    <p className="text-[10px] text-muted-foreground font-mono">Replay clip · captured because this run failed</p>
+                    <p className="text-xs text-muted-foreground font-mono">Replay clip · captured because this run failed</p>
                   </div>
                 ) : (
                   <div className="aspect-video rounded ring-1 ring-hairline bg-panel flex flex-col items-center justify-center gap-1 text-muted-foreground">
                     <Film className="h-6 w-6" />
-                    <span className="text-[11px]">A clip is recorded and kept only when a run fails.</span>
+                    <span className="text-xs">A clip is recorded and kept only when a run fails.</span>
                   </div>
                 )}
               </TabsContent>
-              <TabsContent value="console" className="rounded ring-1 ring-hairline bg-panel mt-3 p-3 font-mono text-[11px] text-muted-foreground max-h-64 overflow-auto">
+              <TabsContent value="console" className="rounded ring-1 ring-hairline bg-panel mt-3 p-3 font-mono text-xs text-muted-foreground max-h-64 overflow-auto">
                 {vd?.console?.length ? (
                   vd.console.map((c, i) => (
                     <div key={i} className={cn("break-all", c.type === "error" ? "text-fail" : "text-warn")}>[{c.type}] {c.text}</div>
@@ -141,7 +145,7 @@ function RunDetail() {
                   <div className="text-muted-foreground/60">No console errors or warnings captured.</div>
                 )}
               </TabsContent>
-              <TabsContent value="network" className="rounded ring-1 ring-hairline bg-panel mt-3 p-3 font-mono text-[11px] text-muted-foreground max-h-64 overflow-auto">
+              <TabsContent value="network" className="rounded ring-1 ring-hairline bg-panel mt-3 p-3 font-mono text-xs text-muted-foreground max-h-64 overflow-auto">
                 {vd?.network?.length ? (
                   vd.network.map((n, i) => (
                     <div key={i} className="text-fail break-all">{n.method} {n.url} · {n.status}</div>
@@ -158,28 +162,28 @@ function RunDetail() {
               <h2 className="text-sm font-medium">Visual diff</h2>
               <div className="flex items-center gap-2">
                 {vd?.ssim !== undefined && (
-                  <span className={cn("text-[11px] font-mono", vd.ssim >= 0.99 ? "text-pass" : vd.ssim >= 0.95 ? "text-warn" : "text-fail")}>
+                  <span className={cn("text-xs font-mono", vd.ssim >= 0.99 ? "text-pass" : vd.ssim >= 0.95 ? "text-warn" : "text-fail")}>
                     SSIM {vd.ssim.toFixed(4)}
                   </span>
                 )}
                 {vd?.diffPixels !== undefined && (
-                  <span className={cn("text-[11px] font-mono", vd.diffPixels === 0 ? "text-pass" : "text-warn")}>
+                  <span className={cn("text-xs font-mono", vd.diffPixels === 0 ? "text-pass" : "text-warn")}>
                     {vd.diffPixels === 0 ? "pixel-identical" : `${vd.diffPixels.toLocaleString()} px differ`}
                   </span>
                 )}
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               {vd?.firstBaseline ? "Baseline captured — re-run to compare." : vd?.diffError ? vd.diffError : "Baseline · actual · diff"}
             </p>
             <div className="grid grid-cols-3 gap-2 mb-3">
               <div>
                 {baseline ? <img src={baseline} alt="baseline" className="w-full rounded ring-1 ring-hairline" /> : <div className="aspect-video rounded ring-1 ring-hairline bg-panel" />}
-                <p className="text-[10px] font-mono text-muted-foreground mt-1 text-center">Baseline</p>
+                <p className="text-xs font-mono text-muted-foreground mt-1 text-center">Baseline</p>
               </div>
               <div>
                 {actual ? <img src={actual} alt="actual" className="w-full rounded ring-1 ring-hairline" /> : <div className="aspect-video rounded ring-1 ring-hairline bg-panel" />}
-                <p className="text-[10px] font-mono text-muted-foreground mt-1 text-center">Actual</p>
+                <p className="text-xs font-mono text-muted-foreground mt-1 text-center">Actual</p>
               </div>
               <div>
                 {diffImg ? (
@@ -191,11 +195,11 @@ function RunDetail() {
                     {!baseline && !actual && <div className="aspect-video" />}
                   </div>
                 )}
-                <p className="text-[10px] font-mono text-muted-foreground mt-1 text-center">Diff</p>
+                <p className="text-xs font-mono text-muted-foreground mt-1 text-center">Diff</p>
               </div>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground">Diff opacity · {diffOpacity[0]}%</div>
+              <div className="text-xs uppercase tracking-wider font-mono text-muted-foreground">Diff opacity · {diffOpacity[0]}%</div>
               <Slider value={diffOpacity} onValueChange={setDiffOpacity} min={0} max={100} step={1} />
             </div>
             {run.caseId && actual && (

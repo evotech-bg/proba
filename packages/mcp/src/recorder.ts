@@ -17,11 +17,16 @@ import {
   type ProbaDb,
   artifacts as artifactsT,
   assertions as assertionsT,
+  buildResolver,
+  getAuthState,
   knowledge as knowledgeT,
   resolveBugTaskOnPass,
+  resolveStepValues,
+  saveAuthState,
   results as resultsT,
   sessions as sessionsT,
   steps as stepsT,
+  suiteCases as suiteCasesT,
   testCases as testCasesT,
   testRuns as testRunsT,
 } from '@proba/store'
@@ -92,7 +97,7 @@ export class Recorder {
   /** Open a session; returns the knowledge already known about this app (resume, don't re-explore). */
   async openSession(
     input: OpenSessionInput,
-  ): Promise<{ sessionId: string; knownSelectors: number }> {
+  ): Promise<{ sessionId: string; knownSelectors: number; authReused: boolean }> {
     this.appKey = input.appKey
     const [session] = this.db
       .insert(sessionsT)
@@ -102,17 +107,32 @@ export class Recorder {
     this.sessionId = session!.id
     const [run] = this.db.insert(testRunsT).values({ environment: input.baseURL }).returning().all()
     this.runId = run!.id
+    // resume authenticated: if this app has captured auth, seed the context with it
+    const savedAuth = getAuthState(this.db, input.appKey)
     this.web = await WebSession.launch({
       headless: input.headless ?? true,
       baseURL: input.baseURL,
       snapshotDir: join(this.outDir, 'snapshots'),
+      ...(savedAuth
+        ? { storageState: savedAuth as { cookies?: unknown[]; origins?: unknown[] } }
+        : {}),
     })
 
     const known = this.db.select().from(knowledgeT).where(eq(knowledgeT.appKey, input.appKey)).all()
     return {
       sessionId: this.sessionId,
       knownSelectors: known.filter((k) => k.kind === 'selector').length,
+      authReused: Boolean(savedAuth),
     }
+  }
+
+  /** Capture the current browser auth (cookies + localStorage) for reuse in later runs/sessions. */
+  async saveAuth(name = 'default'): Promise<{ saved: boolean; name: string }> {
+    if (!this.web) throw new Error('no open session')
+    if (!this.appKey) throw new Error('session has no appKey')
+    const state = await this.web.storageState()
+    saveAuthState(this.db, this.appKey, state, name)
+    return { saved: true, name }
   }
 
   startCase(title: string, polarity: 'positive' | 'negative' = 'positive'): string {
@@ -136,16 +156,23 @@ export class Recorder {
   /** Execute + record a web step. */
   async act(step: StepSpec): Promise<StepResult> {
     if (!this.web) throw new Error('no open session')
-    const result = await this.web.execute(step)
+    // execute with {{account.*}}/{{var.*}} resolved, but store the template (secret-free, re-runnable)
+    const result = await this.web.execute(this.resolve(step))
     this.persistStep(step, result)
     return result
   }
 
   /** Execute + record an API step. */
   async request(step: StepSpec): Promise<StepResult> {
-    const result = await executeApi(step)
+    const result = await executeApi(this.resolve(step))
     this.persistStep(step, result)
     return result
+  }
+
+  /** Resolve {{account.*}}/{{var.*}} placeholders for execution, against this app's config. */
+  private resolve(step: StepSpec): StepSpec {
+    if (!this.appKey) return step
+    return resolveStepValues(step, buildResolver(this.db, this.appKey))
   }
 
   private persistStep(step: StepSpec, result: StepResult): void {
@@ -222,7 +249,7 @@ export class Recorder {
 
   /** Persist a discovered fact across sessions (the moat). */
   remember(
-    kind: 'selector' | 'quirk' | 'exploration' | 'healing',
+    kind: 'selector' | 'quirk' | 'exploration' | 'healing' | 'auth',
     key: string,
     value: Record<string, unknown>,
     confidence = 0.8,
@@ -275,7 +302,12 @@ export class Recorder {
     if (!id) throw new Error('no case to replay')
     const [run] = this.db.insert(testRunsT).values({ environment: 'replay' }).returning().all()
     const verdicts: string[] = []
-    for (const step of this.loadCaseSteps(id)) {
+    // resolve {{account.*}}/{{var.*}} against the case's app (falls back to the open session)
+    const tc = this.db.select().from(testCasesT).where(eq(testCasesT.id, id)).all()[0]
+    const appKey = tc?.appKey || this.appKey
+    const vars = appKey ? buildResolver(this.db, appKey) : {}
+    for (const raw of this.loadCaseSteps(id)) {
+      const step = resolveStepValues(raw, vars)
       let result: StepResult
       if (step.kind === 'api') result = await executeApi(step)
       else if (step.kind === 'web') {
@@ -305,6 +337,87 @@ export class Recorder {
       blocked,
       verdicts,
     }
+  }
+
+  /**
+   * Replay every case in a suite. Pass `accounts` to run the whole suite once per
+   * account (a variation matrix): each pass binds {{account.<field>}} to that account
+   * and injects its saved auth. Uses fresh ephemeral browser contexts (independent of
+   * any open recording session), so auth is isolated per case.
+   */
+  async replaySuite(
+    suiteId: string,
+    accounts: string[] = [],
+  ): Promise<{
+    cases: number
+    casesPassed: number
+    casesFailed: number
+    variations: { account: string | null; casesPassed: number; casesFailed: number }[]
+  }> {
+    const caseIds = this.db
+      .select()
+      .from(suiteCasesT)
+      .where(eq(suiteCasesT.suiteId, suiteId))
+      .all()
+      .sort((a, b) => a.ordinal - b.ordinal)
+      .map((m) => m.caseId)
+    const passes = accounts.filter(Boolean).length ? accounts.filter(Boolean) : [undefined]
+    const variations: { account: string | null; casesPassed: number; casesFailed: number }[] = []
+    let casesPassed = 0
+    let casesFailed = 0
+
+    for (const account of passes) {
+      let vPassed = 0
+      let vFailed = 0
+      for (const caseId of caseIds) {
+        const tc = this.db.select().from(testCasesT).where(eq(testCasesT.id, caseId)).all()[0]
+        const appKey = tc?.appKey || this.appKey
+        const vars = appKey ? buildResolver(this.db, appKey, account) : {}
+        const auth = appKey
+          ? (getAuthState(this.db, appKey, account) ?? getAuthState(this.db, appKey))
+          : undefined
+        const web = await WebSession.launch({
+          headless: true,
+          snapshotDir: join(this.outDir, 'snapshots'),
+          ...(auth ? { storageState: auth as { cookies?: unknown[]; origins?: unknown[] } } : {}),
+        })
+        const [run] = this.db
+          .insert(testRunsT)
+          .values({ environment: account ? `replay · ${account}` : 'replay' })
+          .returning()
+          .all()
+        let caseFailed = false
+        for (const raw of this.loadCaseSteps(caseId)) {
+          const step = resolveStepValues(raw, vars)
+          let result: StepResult
+          if (step.kind === 'api') result = await executeApi(step)
+          else if (step.kind === 'web') result = await web.execute(step)
+          else result = { verdict: 'blocked', durationMs: 0, message: 'db replay needs a fixture' }
+          if (result.verdict !== 'passed') caseFailed = true
+          this.db
+            .insert(resultsT)
+            .values({
+              runId: run!.id,
+              caseId,
+              verdict: result.verdict,
+              durationMs: Math.round(result.durationMs),
+              message: result.message,
+            })
+            .run()
+        }
+        await web.close()
+        if (caseFailed) {
+          vFailed++
+          casesFailed++
+        } else {
+          vPassed++
+          casesPassed++
+          resolveBugTaskOnPass(this.db, caseId, run!.id)
+        }
+      }
+      variations.push({ account: account ?? null, casesPassed: vPassed, casesFailed: vFailed })
+    }
+    return { cases: caseIds.length * passes.length, casesPassed, casesFailed, variations }
   }
 
   /** Build the canonical test from recorded steps and render the artifact trinity to disk. */

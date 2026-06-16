@@ -9,5 +9,5 @@ export const replayTest = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => replayCase(data.caseId))
 
 export const replaySuiteFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ suiteId: z.string() }))
-  .handler(async ({ data }) => replaySuite(data.suiteId))
+  .inputValidator(z.object({ suiteId: z.string(), accounts: z.array(z.string()).optional() }))
+  .handler(async ({ data }) => replaySuite(data.suiteId, { accounts: data.accounts }))

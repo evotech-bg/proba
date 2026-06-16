@@ -49,7 +49,7 @@ export function LocatorEditor({
         />
       </div>
       {brittle && (
-        <div className="flex items-start gap-2 text-[11px] text-warn rounded-md bg-warn/10 ring-1 ring-warn/25 px-2 py-1.5">
+        <div className="flex items-start gap-2 text-xs text-warn rounded-md bg-warn/10 ring-1 ring-warn/25 px-2 py-1.5">
           <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
           <span><span className="font-medium">Brittle locator.</span> Prefer role / testid — Proba's recorder warns on positional css/xpath because they break under design changes.</span>
         </div>

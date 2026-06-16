@@ -14,7 +14,7 @@ export function StatusPill({ verdict, className }: { verdict: Verdict; className
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset tabular-nums",
+        "inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset tabular-nums",
         m.cls, className
       )}
       aria-label={`Verdict: ${m.label}`}
@@ -34,7 +34,7 @@ export function KindBadge({ kind, className }: { kind: StepKind; className?: str
   const m = map[kind];
   return (
     <span className={cn(
-      "inline-flex h-5 items-center rounded px-1.5 text-[10px] font-semibold tracking-wider ring-1 ring-inset font-mono",
+      "inline-flex h-5 items-center rounded px-1.5 text-xs font-semibold tracking-wider ring-1 ring-inset font-mono",
       m.color, className
     )}>{m.label}</span>
   );
@@ -52,7 +52,7 @@ export function PriorityDot({ p }: { p?: Priority }) {
 export function PolarityBadge({ polarity }: { polarity: Polarity }) {
   return (
     <span className={cn(
-      "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset font-mono uppercase tracking-wider",
+      "inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset font-mono uppercase tracking-wider",
       polarity === "positive"
         ? "text-pass bg-pass/10 ring-pass/20"
         : "text-fail bg-fail/10 ring-fail/25"
@@ -69,7 +69,7 @@ export function LifecycleBadge({ lifecycle }: { lifecycle: Lifecycle }) {
   };
   return (
     <span className={cn(
-      "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset uppercase tracking-wider",
+      "inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset uppercase tracking-wider",
       map[lifecycle]
     )}>{lifecycle}</span>
   );
@@ -77,7 +77,7 @@ export function LifecycleBadge({ lifecycle }: { lifecycle: Lifecycle }) {
 
 export function TechniqueBadge({ technique }: { technique: string }) {
   return (
-    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ring-border bg-muted/40 text-muted-foreground uppercase tracking-wider font-mono">
+    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ring-border bg-muted/40 text-muted-foreground uppercase tracking-wider font-mono">
       {technique}
     </span>
   );

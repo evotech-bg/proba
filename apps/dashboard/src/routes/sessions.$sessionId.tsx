@@ -30,7 +30,7 @@ function KindTag({ kind }: { kind: KnowledgeKind }) {
   const m = KIND_META[kind] ?? KIND_META.exploration;
   const Icon = m.icon;
   return (
-    <span className={cn("inline-flex items-center gap-1 h-4 px-1.5 rounded ring-1 text-[10px] font-mono uppercase tracking-wider shrink-0", m.tint)}>
+    <span className={cn("inline-flex items-center gap-1 h-4 px-1.5 rounded ring-1 text-xs font-mono uppercase tracking-wider shrink-0", m.tint)}>
       <Icon className="h-2.5 w-2.5" /> {m.label}
     </span>
   );
@@ -64,9 +64,13 @@ function SessionDetail() {
           <div className="flex items-center gap-2">
             <Radio className="h-4 w-4 text-primary shrink-0" />
             <h1 className="text-lg font-semibold tracking-tight truncate">{sess.charter || "Untitled exploratory session"}</h1>
-            <span className={cn("text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded ring-1 shrink-0", STATUS_STYLE[sess.status] ?? "ring-hairline bg-panel")}>{sess.status}</span>
+            <span className={cn("text-xs font-mono uppercase tracking-wider px-1.5 py-0.5 rounded ring-1 shrink-0", STATUS_STYLE[sess.status] ?? "ring-hairline bg-panel")}>{sess.status}</span>
           </div>
-          <p className="text-[11px] font-mono text-muted-foreground mt-1 break-all">{sess.id}</p>
+          <p className="text-xs font-mono text-muted-foreground mt-1 break-all">{sess.id}</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+            What the agent did and learned in this session, in the order it happened, plus the durable knowledge
+            captured here for reuse in later runs.
+          </p>
         </div>
       </div>
 
@@ -85,10 +89,10 @@ function SessionDetail() {
           <div className="rounded-lg ring-1 ring-hairline bg-card">
             <div className="px-4 py-2.5 hairline-b">
               <h2 className="text-sm font-medium">Timeline</h2>
-              <p className="text-[11px] text-muted-foreground mt-0.5">What the agent learned, in the order it observed it.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">What the agent learned, in the order it observed it.</p>
             </div>
             {sess.timeline.length === 0 ? (
-              <div className="p-8 text-center text-[12px] text-muted-foreground">
+              <div className="p-8 text-center text-sm text-muted-foreground">
                 Nothing was recorded in this session yet.
               </div>
             ) : (
@@ -100,9 +104,9 @@ function SessionDetail() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <KindTag kind={ev.kind} />
-                        <span className="text-[12px] font-mono truncate">{ev.action}</span>
+                        <span className="text-sm font-mono truncate">{ev.action}</span>
                       </div>
-                      <div className="text-[10px] font-mono text-muted-foreground">{format(new Date(ev.ts), "HH:mm:ss")}</div>
+                      <div className="text-xs font-mono text-muted-foreground">{format(new Date(ev.ts), "HH:mm:ss")}</div>
                     </div>
                   </li>
                 ))}
@@ -114,10 +118,10 @@ function SessionDetail() {
           {metricRows.length > 0 && (
             <div className="rounded-lg ring-1 ring-hairline bg-card p-4">
               <h2 className="text-sm font-medium mb-1">Time breakdown</h2>
-              <p className="text-[11px] text-muted-foreground mb-3">Where the session's time went.</p>
+              <p className="text-xs text-muted-foreground mb-3">Where the session's time went.</p>
               <div className="space-y-2">
                 {metricRows.map(([k, v]) => (
-                  <div key={k} className="flex items-center justify-between text-[12px]">
+                  <div key={k} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{METRIC_LABEL[k] ?? k}</span>
                     <span className="font-mono">{v >= 1000 ? `${Math.round(v / 1000)}s` : String(v)}</span>
                   </div>
@@ -130,7 +134,7 @@ function SessionDetail() {
           {sess.notes && sess.notes.length > 0 && (
             <div className="rounded-lg ring-1 ring-hairline bg-card p-4">
               <h2 className="text-sm font-medium mb-2">Notes</h2>
-              <ul className="text-[12px] text-muted-foreground space-y-1.5 list-disc pl-4">
+              <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-4">
                 {sess.notes.map((n, i) => <li key={i}>{n}</li>)}
               </ul>
             </div>
@@ -142,14 +146,14 @@ function SessionDetail() {
             <div className="flex items-center gap-1.5 mb-1">
               <Brain className="h-3.5 w-3.5 text-primary" />
               <h2 className="text-sm font-medium">Knowledge learned</h2>
-              <span className="text-muted-foreground font-mono text-[11px]">· {learned.length}</span>
+              <span className="text-muted-foreground font-mono text-xs">· {learned.length}</span>
             </div>
-            <p className="text-[11px] text-muted-foreground mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               Durable facts captured here. <span className="text-foreground">These carry into future sessions</span> for{" "}
               <span className="font-mono">{sess.appKey}</span> so the agent reuses them instantly.
             </p>
             {learned.length === 0 ? (
-              <p className="text-[12px] text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Nothing learned in this session.
                 {sess.appKnowledgeCount ? ` The app already knows ${sess.appKnowledgeCount} fact${sess.appKnowledgeCount === 1 ? "" : "s"} from earlier sessions.` : ""}
               </p>
@@ -159,12 +163,12 @@ function SessionDetail() {
                   <li key={i} className="space-y-1">
                     <div className="flex items-center gap-2">
                       <KindTag kind={k.kind} />
-                      <span className="text-[12px] truncate flex-1">{k.name}</span>
+                      <span className="text-sm truncate flex-1">{k.name}</span>
                       {confLabel(k.confidence) && (
-                        <span className={cn("text-[10px] font-mono", k.confidence >= 0.8 ? "text-pass" : k.confidence >= 0.5 ? "text-warn" : "text-fail")}>{confLabel(k.confidence)}</span>
+                        <span className={cn("text-xs font-mono", k.confidence >= 0.8 ? "text-pass" : k.confidence >= 0.5 ? "text-warn" : "text-fail")}>{confLabel(k.confidence)}</span>
                       )}
                     </div>
-                    <code className="block bg-panel ring-1 ring-hairline rounded px-2 py-1 text-[11px] font-mono text-muted-foreground overflow-auto">{k.value}</code>
+                    <code className="block bg-panel ring-1 ring-hairline rounded px-2 py-1 text-xs font-mono text-muted-foreground overflow-auto">{k.value}</code>
                   </li>
                 ))}
               </ul>
@@ -177,12 +181,12 @@ function SessionDetail() {
               <div className="flex items-center gap-1.5 mb-2">
                 <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
                 <h2 className="text-sm font-medium">Tickets from this session</h2>
-                <span className="text-muted-foreground font-mono text-[11px]">· {sess.linkedTasks.length}</span>
+                <span className="text-muted-foreground font-mono text-xs">· {sess.linkedTasks.length}</span>
               </div>
               <ul className="space-y-1.5">
                 {sess.linkedTasks.map((t) => (
-                  <li key={t.id} className="flex items-center gap-2 text-[12px]">
-                    <span className="text-[10px] font-mono uppercase text-muted-foreground w-16 shrink-0">{t.status}</span>
+                  <li key={t.id} className="flex items-center gap-2 text-sm">
+                    <span className="text-xs font-mono uppercase text-muted-foreground w-16 shrink-0">{t.status}</span>
                     <Link to="/board" className="text-primary hover:underline truncate">{t.title}</Link>
                   </li>
                 ))}
@@ -198,7 +202,7 @@ function SessionDetail() {
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-md ring-1 ring-hairline bg-panel/50 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground">{label}</div>
+      <div className="text-xs uppercase tracking-wider font-mono text-muted-foreground">{label}</div>
       <div className="text-[13px] font-medium mt-0.5 truncate">{value}</div>
     </div>
   );

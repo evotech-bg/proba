@@ -54,7 +54,12 @@ export interface WebSessionOptions {
   snapshotDir?: string
   /** if set, record a video of the session into this dir (kept by the caller only on failure) */
   recordVideoDir?: string
+  /** seed the context with captured auth (Playwright storageState) so gated routes work without re-login */
+  storageState?: StorageStateInput
 }
+
+/** Playwright storage state — cookies + per-origin localStorage; injectable into a new context. */
+export type StorageStateInput = string | { cookies?: unknown[]; origins?: unknown[] }
 
 export interface ConsoleEntry {
   type: string
@@ -84,6 +89,13 @@ export class WebSession {
     const context = await browser.newContext({
       baseURL: opts.baseURL,
       ...(opts.recordVideoDir ? { recordVideo: { dir: opts.recordVideoDir } } : {}),
+      ...(opts.storageState
+        ? {
+            storageState: opts.storageState as NonNullable<
+              Parameters<Browser['newContext']>[0]
+            >['storageState'],
+          }
+        : {}),
     })
     const page = await context.newPage()
     const session = new WebSession(browser, page, opts.snapshotDir)
@@ -129,9 +141,14 @@ export class WebSession {
         case 'check':
           await resolveLocator(this.page, step.target!).check()
           break
-        case 'wait':
-          await this.page.waitForLoadState('networkidle')
+        case 'wait': {
+          // Apps with persistent connections (Firebase, websockets, polling) never reach
+          // 'networkidle', so bound the wait and settle gracefully instead of hard-failing.
+          const ms = Number(p.timeout ?? p.ms ?? 5000)
+          await this.page.waitForLoadState('load').catch(() => {})
+          await this.page.waitForLoadState('networkidle', { timeout: ms }).catch(() => {})
           break
+        }
         case 'expect':
           return await this.checkDom(step, started)
         default:
@@ -149,13 +166,31 @@ export class WebSession {
 
   private async checkDom(step: StepSpec, started: number): Promise<StepResult> {
     const fails: string[] = []
+    // Web-first assertions auto-wait: SPA content (React/auth-gated routes) renders
+    // asynchronously, so a non-waiting isVisible() check is flaky. Retry up to a timeout.
+    const timeout = Number(step.params?.timeout ?? 5000)
     for (const a of step.assertions ?? []) {
       if (a.type === 'dom') {
         const loc = resolveLocator(this.page, step.target!)
-        if (a.visible === true && !(await loc.isVisible())) fails.push('not visible')
+        if (a.visible === true) {
+          const ok = await loc
+            .waitFor({ state: 'visible', timeout })
+            .then(() => true)
+            .catch(() => false)
+          if (!ok) fails.push('not visible')
+        }
         if (a.toContainText) {
-          const txt = (await loc.textContent()) ?? ''
-          if (!txt.includes(a.toContainText)) fails.push(`text lacks "${a.toContainText}"`)
+          const deadline = performance.now() + timeout
+          let ok = false
+          do {
+            const txt = (await loc.textContent().catch(() => '')) ?? ''
+            if (txt.includes(a.toContainText)) {
+              ok = true
+              break
+            }
+            await this.page.waitForTimeout(100)
+          } while (performance.now() < deadline)
+          if (!ok) fails.push(`text lacks "${a.toContainText}"`)
         }
       } else if (a.type === 'snapshot') {
         const fail = await this.checkTextSnapshot(step, a)
@@ -236,6 +271,11 @@ export class WebSession {
 
   async setContent(html: string): Promise<void> {
     await this.page.setContent(html)
+  }
+
+  /** Capture the current auth/session state (cookies + localStorage) for reuse in later runs. */
+  async storageState(): Promise<{ cookies: unknown[]; origins: unknown[] }> {
+    return (await this.page.context().storageState()) as { cookies: unknown[]; origins: unknown[] }
   }
 
   /**

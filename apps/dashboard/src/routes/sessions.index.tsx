@@ -32,6 +32,10 @@ function SessionsList() {
         <p className="text-sm text-muted-foreground mt-0.5">
           {sessions.length} recording session{sessions.length === 1 ? "" : "s"} · {totalSelectors} selector{totalSelectors === 1 ? "" : "s"} learned
         </p>
+        <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+          Recorded agent sessions and the durable knowledge each one learned — discovered selectors, app quirks and
+          self-healing — which carries into future runs so the agent resumes instead of re-exploring.
+        </p>
       </div>
 
       {/* what a session is — the moat, explained in plain words */}
@@ -61,15 +65,15 @@ function SessionsList() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-[13px] font-medium truncate">{s.charter || "Untitled exploratory session"}</span>
-                      <span className={cn("text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded ring-1 shrink-0", STATUS_STYLE[s.status] ?? "ring-hairline bg-panel")}>{s.status}</span>
+                      <span className={cn("text-xs font-mono uppercase tracking-wider px-1.5 py-0.5 rounded ring-1 shrink-0", STATUS_STYLE[s.status] ?? "ring-hairline bg-panel")}>{s.status}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-[11px] font-mono text-muted-foreground">
+                    <div className="flex items-center gap-2 mt-0.5 text-xs font-mono text-muted-foreground">
                       <span className="px-1.5 rounded bg-muted/60">{s.appKey}</span>
                       <span>·</span>
                       <span>{<TimeAgo date={s.startedAt} />}</span>
                     </div>
                   </div>
-                  <div className="text-right text-[11px] font-mono text-muted-foreground shrink-0">
+                  <div className="text-right text-xs font-mono text-muted-foreground shrink-0">
                     <div><span className="text-foreground">{s.knownSelectors.length}</span> selector{s.knownSelectors.length === 1 ? "" : "s"} learned</div>
                     <div>{s.stepCount} step{s.stepCount === 1 ? "" : "s"} recorded</div>
                   </div>
@@ -81,7 +85,7 @@ function SessionsList() {
         </div>
       )}
 
-      <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
         <Info className="h-3 w-3" /> A session with 0 steps but learned selectors still carries value — its knowledge feeds future runs.
       </p>
     </div>

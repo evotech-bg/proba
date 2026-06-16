@@ -23,7 +23,7 @@ const NAV = [
 
 function McpStatus({ collapsed }: { collapsed: boolean }) {
   return (
-    <div className={cn("flex items-center gap-2 text-[11px] text-muted-foreground", collapsed && "justify-center")}>
+    <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", collapsed && "justify-center")}>
       <span className="status-dot status-dot-pulse text-pass" style={{ background: "currentColor" }} />
       {!collapsed && <span className="font-mono">MCP: connected</span>}
     </div>
@@ -49,7 +49,7 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
           {!collapsed && (
             <div className="leading-tight">
               <div className="text-[13px] font-semibold tracking-tight">Proba</div>
-              <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">QA workbench</div>
+              <div className="text-xs text-muted-foreground font-mono uppercase tracking-wider">QA workbench</div>
             </div>
           )}
         </Link>
@@ -135,7 +135,7 @@ function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
       >
         <Search className="h-3.5 w-3.5" />
         <span className="flex-1 text-left">Search or jump to…</span>
-        <kbd className="font-mono text-[10px] ring-1 ring-hairline rounded px-1 py-0.5 bg-canvas">⌘K</kbd>
+        <kbd className="font-mono text-xs ring-1 ring-hairline rounded px-1 py-0.5 bg-canvas">⌘K</kbd>
       </button>
       <Button size="sm" className="h-8 gap-1.5">
         <Plus className="h-3.5 w-3.5" /> New

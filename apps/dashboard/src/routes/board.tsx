@@ -76,6 +76,10 @@ function Board() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Board</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{tasks.length} tasks · drag to move</p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+            The embedded task board. Bugs caught during a replay are filed here automatically with a title, the failing
+            step and a screenshot — drag a card across columns to move it from triage to done.
+          </p>
         </div>
       </div>
 
@@ -97,7 +101,7 @@ function Board() {
               <div className="flex items-center justify-between px-3 py-2.5 hairline-b">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[12px] font-medium uppercase tracking-wider">{col.label}</h3>
-                  <span className="text-[10px] font-mono text-muted-foreground tabular-nums">{items.length}</span>
+                  <span className="text-xs font-mono text-muted-foreground tabular-nums">{items.length}</span>
                 </div>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setNewTitleFor(col.status); setNewTitle(""); }} aria-label="Add task">
                   <Plus className="h-3.5 w-3.5" />
@@ -138,7 +142,7 @@ function Board() {
                         className="mt-2 w-full h-20 object-cover object-top rounded ring-1 ring-fail/20"
                       />
                     )}
-                    <div className="flex items-center gap-1.5 mt-2 text-[10px] font-mono text-muted-foreground">
+                    <div className="flex items-center gap-1.5 mt-2 text-xs font-mono text-muted-foreground">
                       {task.evidence?.source === "replay" && (
                         <span className="inline-flex items-center gap-1 h-4 px-1.5 rounded ring-1 ring-fail/30 text-fail bg-fail/5"><Bug className="h-2.5 w-2.5" />bug</span>
                       )}
@@ -158,7 +162,7 @@ function Board() {
                   </article>
                 ))}
                 {items.length === 0 && newTitleFor !== col.status && (
-                  <div className="text-[11px] text-muted-foreground text-center py-6">Empty</div>
+                  <div className="text-xs text-muted-foreground text-center py-6">Empty</div>
                 )}
               </div>
             </div>
@@ -193,7 +197,7 @@ function TaskSheet({ openId, onClose }: { openId: string | null; onClose: () => 
         </SheetHeader>
         <div className="mt-4 space-y-4 text-sm">
           <div>
-            <label className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground">Description</label>
+            <label className="text-xs uppercase tracking-wider font-mono text-muted-foreground">Description</label>
             <Textarea value={task.description ?? ""} onChange={(e) => update({ description: e.target.value })} placeholder="What needs to happen?" className="mt-1 text-[12px]" rows={4} />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -234,7 +238,7 @@ function TaskSheet({ openId, onClose }: { openId: string | null; onClose: () => 
 
           {task.caseId && (
             <div className="rounded-md ring-1 ring-hairline bg-panel p-2.5">
-              <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground mb-1">Linked test</div>
+              <div className="text-xs uppercase tracking-wider font-mono text-muted-foreground mb-1">Linked test</div>
               <Link to="/tests/$testId" params={{ testId: task.caseId }} className="text-[12px] text-primary hover:underline">
                 Open editor →
               </Link>
@@ -243,21 +247,21 @@ function TaskSheet({ openId, onClose }: { openId: string | null; onClose: () => 
 
           {task.evidence?.source === "replay" && (
             <div className="rounded-md ring-1 ring-fail/30 bg-fail/5 p-2.5">
-              <div className="flex items-center gap-1.5 text-[11px] font-medium text-fail mb-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-fail mb-1.5">
                 <Bug className="h-3.5 w-3.5" /> Auto-filed from a failed replay
               </div>
               {task.evidence.failingStep && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Caught at step <span className="font-mono text-foreground">{task.evidence.failingStep.ordinal}</span>{" "}
                   ({task.evidence.failingStep.kind} {task.evidence.failingStep.action})
                   {task.evidence.failureCount && task.evidence.failureCount > 1 ? ` · ${task.evidence.failureCount} steps failed` : ""}
                 </p>
               )}
               {task.evidence.failingStep?.message && (
-                <p className="mt-1 text-[11px] font-mono text-fail/90 break-words">{task.evidence.failingStep.message}</p>
+                <p className="mt-1 text-xs font-mono text-fail/90 break-words">{task.evidence.failingStep.message}</p>
               )}
               {task.runId && (
-                <Link to="/runs/$runId" params={{ runId: task.runId }} className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-primary hover:underline">
+                <Link to="/runs/$runId" params={{ runId: task.runId }} className="mt-1.5 inline-flex items-center gap-1 text-xs text-primary hover:underline">
                   <ExternalLink className="h-3 w-3" /> View run
                 </Link>
               )}
@@ -266,7 +270,7 @@ function TaskSheet({ openId, onClose }: { openId: string | null; onClose: () => 
 
           {clip && (
             <div>
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-mono text-muted-foreground mb-1.5">
+              <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-mono text-muted-foreground mb-1.5">
                 <Film className="h-3 w-3" /> Failure clip
               </div>
               <video src={`${clip}?v=${task.runId}`} controls className="w-full rounded ring-1 ring-fail/30" />
@@ -274,19 +278,19 @@ function TaskSheet({ openId, onClose }: { openId: string | null; onClose: () => 
           )}
 
           <div>
-            <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground mb-1.5">Screenshot</div>
+            <div className="text-xs uppercase tracking-wider font-mono text-muted-foreground mb-1.5">Screenshot</div>
             {task.evidence?.screenshot ? (
               <a href={`${task.evidence.screenshot}?v=${task.runId ?? task.id}`} target="_blank" rel="noreferrer">
                 <img src={`${task.evidence.screenshot}?v=${task.runId ?? task.id}`} alt="failure" className="w-full rounded ring-1 ring-hairline" />
               </a>
             ) : (
-              <div className="aspect-video rounded ring-1 ring-hairline bg-panel flex items-center justify-center text-[11px] text-muted-foreground">No screenshot</div>
+              <div className="aspect-video rounded ring-1 ring-hairline bg-panel flex items-center justify-center text-xs text-muted-foreground">No screenshot</div>
             )}
           </div>
 
           <div>
-            <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground mb-1.5">Activity</div>
-            <ul className="space-y-1.5 text-[11px] text-muted-foreground">
+            <div className="text-xs uppercase tracking-wider font-mono text-muted-foreground mb-1.5">Activity</div>
+            <ul className="space-y-1.5 text-xs text-muted-foreground">
               <li>created · {<TimeAgo date={task.createdAt} />}</li>
             </ul>
           </div>
@@ -306,7 +310,7 @@ function TaskSheet({ openId, onClose }: { openId: string | null; onClose: () => 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground">{label}</label>
+      <label className="text-xs uppercase tracking-wider font-mono text-muted-foreground">{label}</label>
       <div className="mt-1">{children}</div>
     </div>
   );
