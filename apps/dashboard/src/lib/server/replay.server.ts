@@ -238,3 +238,27 @@ export async function replaySuite(
     ...(variations.length ? { variations } : {}),
   }
 }
+
+/**
+ * Replay every recorded case (optionally scoped to one app). Each case runs through
+ * replayCase, so a failure auto-files its board bug and a clean pass auto-resolves it —
+ * one button to re-validate the whole library and surface everything that broke.
+ */
+export async function replayAll(opts: { appKey?: string } = {}): Promise<SuiteReplayResult> {
+  const d = getDb()
+  const rows = d.select().from(testCasesT).all()
+  const caseIds = rows
+    .filter((c) => (opts.appKey ? c.appKey === opts.appKey : true))
+    .map((c) => c.id)
+
+  const results: SuiteReplayResult['results'] = []
+  let casesPassed = 0
+  let casesFailed = 0
+  for (const caseId of caseIds) {
+    const r = await replayCase(caseId)
+    results.push({ caseId, account: undefined, passed: r.passed, failed: r.failed, blocked: r.blocked })
+    if (r.failed + r.blocked === 0) casesPassed++
+    else casesFailed++
+  }
+  return { cases: caseIds.length, casesPassed, casesFailed, results }
+}

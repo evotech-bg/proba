@@ -295,6 +295,27 @@ export function createServer(db: ProbaDb, outDir = '.proba'): McpServer {
   )
 
   server.tool(
+    'proba_suite_create',
+    'Create a named suite to group cases (scoped to the open session app). `kind` is an optional label (smoke | sanity | regression | acceptance). Returns the suite id — pass it to proba_suite_assign and proba_replay_suite. Suites let you run a focused group instead of every test.',
+    { name: z.string(), kind: z.string().optional(), description: z.string().optional() },
+    async (a) => ok(recorder.createSuite(a.name, { kind: a.kind, description: a.description })),
+  )
+
+  server.tool(
+    'proba_suite_assign',
+    'Add a recorded case to a suite (idempotent). Sets the case primary suite and its ordered membership so proba_replay_suite runs it. Use to group the existing flat list of tests into runnable suites.',
+    { caseId: z.string(), suiteId: z.string() },
+    async (a) => ok(recorder.assignCase(a.caseId, a.suiteId)),
+  )
+
+  server.tool(
+    'proba_suite_list',
+    'List suites for the open session app, each with its case count. Use to see existing grouping before creating or assigning.',
+    {},
+    async () => ok(recorder.listSuites()),
+  )
+
+  server.tool(
     'proba_diagnose',
     'Diagnose the first failing web step of a recorded case: re-runs it live and returns the broken step plus candidate locators present on the page now — so you can fix the test. Pair with proba_patch_step.',
     { caseId: z.string().optional(), baseURL: z.string().optional() },

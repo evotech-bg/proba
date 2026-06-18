@@ -1,6 +1,7 @@
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
-import { useRef } from "react";
-import { Layers, Plus, ChevronRight } from "lucide-react";
+import { useRef, useState } from "react";
+import { Layers, Play, Plus, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 import { useProba, useScopeFilter } from "@/lib/mock/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +20,11 @@ function SuitesPage() {
   const inScope = useScopeFilter();
   const suites = useProba((s) => s.suites).filter((x) => inScope(x.appKey));
   const createSuite = useProba((s) => s.createSuite);
+  const activeAppKey = useProba((s) => s.activeAppKey);
   const router = useRouter();
   const nameRef = useRef<HTMLInputElement>(null);
   const kindRef = useRef<string>("smoke");
+  const [runningAll, setRunningAll] = useState(false);
 
   const add = () => {
     const name = nameRef.current?.value.trim();
@@ -29,6 +32,22 @@ function SuitesPage() {
     createSuite(name, kindRef.current);
     if (nameRef.current) nameRef.current.value = "";
     router.invalidate();
+  };
+
+  const runAll = async () => {
+    setRunningAll(true);
+    try {
+      const { replayAllFn } = await import("@/lib/api/replay.functions");
+      const r = await replayAllFn({ data: activeAppKey ? { appKey: activeAppKey } : {} });
+      router.invalidate();
+      if (r.casesFailed === 0) toast.success(`All passed — ${r.casesPassed}/${r.cases} cases`);
+      else toast.error(`${r.casesFailed} of ${r.cases} cases failed — bugs filed on the board`);
+    } catch (e) {
+      toast.error("Run all could not start");
+      console.error(e);
+    } finally {
+      setRunningAll(false);
+    }
   };
 
   return (
@@ -42,6 +61,10 @@ function SuitesPage() {
             cases in one go.
           </p>
         </div>
+        <Button size="sm" className="h-8 gap-1.5" onClick={runAll} disabled={runningAll}>
+          <Play className="h-3.5 w-3.5" />
+          {runningAll ? "Running all…" : "Run all"}
+        </Button>
       </div>
 
       <section className="rounded-lg ring-1 ring-hairline bg-card p-4">

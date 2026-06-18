@@ -27,6 +27,7 @@ import {
   sessions as sessionsT,
   steps as stepsT,
   suiteCases as suiteCasesT,
+  suites as suitesT,
   testCases as testCasesT,
   testRuns as testRunsT,
 } from '@proba/store'
@@ -337,6 +338,60 @@ export class Recorder {
       blocked,
       verdicts,
     }
+  }
+
+  /** Create a named suite (scoped to the session's app). Returns the new suite row. */
+  createSuite(name: string, opts: { kind?: string; description?: string } = {}) {
+    const [suite] = this.db
+      .insert(suitesT)
+      .values({
+        appKey: this.appKey || null,
+        name,
+        kind: opts.kind ?? null,
+        description: opts.description ?? null,
+      })
+      .returning()
+      .all()
+    return suite!
+  }
+
+  /** List suites for the session's app, each with its case count. */
+  listSuites() {
+    const rows = this.db
+      .select()
+      .from(suitesT)
+      .where(this.appKey ? eq(suitesT.appKey, this.appKey) : undefined)
+      .all()
+    return rows.map((s) => ({
+      ...s,
+      cases: this.db.select().from(suiteCasesT).where(eq(suiteCasesT.suiteId, s.id)).all().length,
+    }))
+  }
+
+  /**
+   * Assign a case to a suite (idempotent). Sets testCases.suiteId for the primary
+   * grouping and adds a suite_cases membership row (ordered) for replay_suite.
+   */
+  assignCase(caseId: string, suiteId: string) {
+    const tc = this.db.select().from(testCasesT).where(eq(testCasesT.id, caseId)).all()[0]
+    if (!tc) throw new Error(`case not found: ${caseId}`)
+    const suite = this.db.select().from(suitesT).where(eq(suitesT.id, suiteId)).all()[0]
+    if (!suite) throw new Error(`suite not found: ${suiteId}`)
+    this.db.update(testCasesT).set({ suiteId }).where(eq(testCasesT.id, caseId)).run()
+    const existing = this.db
+      .select()
+      .from(suiteCasesT)
+      .where(and(eq(suiteCasesT.suiteId, suiteId), eq(suiteCasesT.caseId, caseId)))
+      .all()
+    if (existing.length === 0) {
+      const ordinal = this.db
+        .select()
+        .from(suiteCasesT)
+        .where(eq(suiteCasesT.suiteId, suiteId))
+        .all().length
+      this.db.insert(suiteCasesT).values({ suiteId, caseId, ordinal }).run()
+    }
+    return { caseId, suiteId, suiteName: suite.name }
   }
 
   /**

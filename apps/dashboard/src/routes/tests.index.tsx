@@ -1,6 +1,6 @@
 import { TimeAgo } from "@/components/ui-extras/time-ago";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Search, FileCode, ChevronRight, ChevronDown } from "lucide-react";
 import { fetchImportedTests } from "@/lib/api/proba.functions";
 import { formatDistanceToNow } from "date-fns";
@@ -45,12 +45,38 @@ function TestsList() {
   const [openFile, setOpenFile] = useState<string | null>(null);
   useEffect(() => { void fetchImportedTests().then((r) => setImported(r as typeof imported)); }, []);
 
+  const suites = useProba((s) => s.suites).filter((x) => inScope(x.appKey));
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
   const rows = useMemo(() => tests.filter((t) =>
     (!q || t.title.toLowerCase().includes(q.toLowerCase()) || t.tags.some((x) => x.includes(q.toLowerCase()))) &&
     (polarity === "all" || t.polarity === polarity) &&
     (lifecycle === "all" || t.lifecycle === lifecycle) &&
     (verdict === "all" || t.verdict === verdict)
   ), [tests, q, polarity, lifecycle, verdict]);
+
+  // Group the filtered rows by their suite (membership comes from suite.caseIds).
+  // Suites are listed alphabetically; tests in no suite fall into "Ungrouped" last.
+  const UNGROUPED = "Ungrouped";
+  const groups = useMemo(() => {
+    const suiteOf = new Map<string, string>();
+    for (const s of suites) for (const cid of s.caseIds) suiteOf.set(cid, s.name);
+    const byName = new Map<string, typeof rows>();
+    for (const t of rows) {
+      const name = suiteOf.get(t.id) ?? UNGROUPED;
+      if (!byName.has(name)) byName.set(name, []);
+      byName.get(name)!.push(t);
+    }
+    return [...byName.entries()].sort(([a], [b]) => {
+      if (a === UNGROUPED) return 1;
+      if (b === UNGROUPED) return -1;
+      return a.localeCompare(b);
+    });
+  }, [rows, suites]);
+
+  const toggleGroup = (name: string) => setCollapsed((s) => {
+    const n = new Set(s); n.has(name) ? n.delete(name) : n.add(name); return n;
+  });
 
   const toggle = (id: string) => setSelected((s) => {
     const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n;
@@ -71,7 +97,7 @@ function TestsList() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Tests</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{tests.length} total · {rows.length} shown</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{tests.length} total · {rows.length} shown · {groups.length} {groups.length === 1 ? "group" : "groups"}</p>
           <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
             Every test you own, as a durable artifact. Open one to edit its steps and export the synced Gherkin, JSON
             and Playwright views — the agent drafts, you stay the owner.
@@ -118,29 +144,48 @@ function TestsList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-hairline">
-            {rows.map((t) => (
-              <tr key={t.id} className="hover:bg-accent/40 group cursor-pointer" onClick={() => navigate({ to: "/tests/$testId", params: { testId: t.id } })}>
-                <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                  <Checkbox checked={selected.has(t.id)} onCheckedChange={() => toggle(t.id)} />
-                </td>
-                <td className="px-2 py-2.5">
-                  <div className="font-medium truncate">{t.title}</div>
-                  {t.tags.length > 0 && (
-                    <div className="flex gap-1 mt-0.5">
-                      {t.tags.slice(0, 4).map((tag) => (
-                        <span key={tag} className="text-xs font-mono text-muted-foreground">#{tag}</span>
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td className="px-2 py-2.5"><PolarityBadge polarity={t.polarity} /></td>
-                <td className="px-2 py-2.5"><TechniqueBadge technique={t.technique} /></td>
-                <td className="px-2 py-2.5"><LifecycleBadge lifecycle={t.lifecycle} /></td>
-                <td className="px-2 py-2.5 tabular-nums text-right text-muted-foreground">{t.steps.length}</td>
-                <td className="px-2 py-2.5"><StatusPill verdict={t.verdict} /></td>
-                <td className="px-2 py-2.5 text-xs font-mono text-muted-foreground">{<TimeAgo date={t.updatedAt} />}</td>
-              </tr>
-            ))}
+            {groups.map(([groupName, items]) => {
+              const isCollapsed = collapsed.has(groupName);
+              return (
+                <Fragment key={groupName}>
+                  <tr
+                    className="bg-panel/40 cursor-pointer hover:bg-accent/40"
+                    onClick={() => toggleGroup(groupName)}
+                  >
+                    <td colSpan={8} className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                        <span className="font-medium text-[13px]">{groupName}</span>
+                        <span className="text-xs font-mono text-muted-foreground">{items.length}</span>
+                      </div>
+                    </td>
+                  </tr>
+                  {!isCollapsed && items.map((t) => (
+                    <tr key={t.id} className="hover:bg-accent/40 group cursor-pointer" onClick={() => navigate({ to: "/tests/$testId", params: { testId: t.id } })}>
+                      <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={selected.has(t.id)} onCheckedChange={() => toggle(t.id)} />
+                      </td>
+                      <td className="px-2 py-2.5 pl-7">
+                        <div className="font-medium truncate">{t.title}</div>
+                        {t.tags.length > 0 && (
+                          <div className="flex gap-1 mt-0.5">
+                            {t.tags.slice(0, 4).map((tag) => (
+                              <span key={tag} className="text-xs font-mono text-muted-foreground">#{tag}</span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-2 py-2.5"><PolarityBadge polarity={t.polarity} /></td>
+                      <td className="px-2 py-2.5"><TechniqueBadge technique={t.technique} /></td>
+                      <td className="px-2 py-2.5"><LifecycleBadge lifecycle={t.lifecycle} /></td>
+                      <td className="px-2 py-2.5 tabular-nums text-right text-muted-foreground">{t.steps.length}</td>
+                      <td className="px-2 py-2.5"><StatusPill verdict={t.verdict} /></td>
+                      <td className="px-2 py-2.5 text-xs font-mono text-muted-foreground">{<TimeAgo date={t.updatedAt} />}</td>
+                    </tr>
+                  ))}
+                </Fragment>
+              );
+            })}
             {rows.length === 0 && (
               <tr><td colSpan={8} className="px-6 py-12 text-center text-sm text-muted-foreground">No tests match those filters.</td></tr>
             )}
